@@ -3596,3 +3596,398 @@ plt.show()
 granger_test = grangercausalitytests(y[['rate_6m','rate_3m']], maxlag=5, verbose=True)
 
 ```
+
+
+Задание 7
+
+<img width="766" height="352" alt="image" src="https://github.com/user-attachments/assets/4363ab20-0666-4f83-afe2-60924a6ff5d5" />
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим VAR(1)
+\begin{align*}
+	\vectx_t&=\matrixA\vectx_{t-1}+\vectu_t &
+	\vectx_t&=\begin{pmatrix} x_t \\ y_t \end{pmatrix} &
+	\vectu_t&=\begin{pmatrix} u_t \\ v_t \end{pmatrix}
+\end{align*}
+где 
+\begin{align*}
+	\vectu_t&\sim WN(0,\Sigma) &
+	\Sigma&=\begin{pmatrix}
+	\sigma^2_u & \sigma_{uv} \\ \sigma_{uv} & \sigma^2_v
+	\end{pmatrix}>0
+\end{align*}
+т.е. $u_t\sim WN(0,\sigma_u^2)$,   $v_t\sim WN(0,\sigma_v^2)$,
+$\cov(u_t,v_t)=\sigma_{uv}$. 
+	
+Проверить условие стационарности для следующих матриц
+\begin{align*}
+	\matrixA&=\begin{pmatrix} 0.5 & 1 \\ 0 & 0.3 \end{pmatrix} &
+	&\begin{pmatrix} 0 & 0.5 \\ -0.5 & 0 \end{pmatrix} &
+	& \begin{pmatrix} 1 & 3 \\ 0 & 0.2  \end{pmatrix} &
+	& \begin{pmatrix} 0 & 1 \\ 0 & 1  \end{pmatrix} &
+	& \begin{pmatrix} 1 & 1 \\ 1 & 1  \end{pmatrix} &
+	& \begin{pmatrix} 0 & 1 \\ 1 & 1  \end{pmatrix}
+\end{align*}
+\end{exercise}
+```
+
+Ответ
+
+```
+import numpy as np
+
+# -------------------------------
+# Список матриц A
+# -------------------------------
+matrices = [
+    np.array([[0.5, 1], [0, 0.3]]),
+    np.array([[0, 0.5], [-0.5, 0]]),
+    np.array([[1, 3], [0, 0.2]]),
+    np.array([[0, 1], [0, 1]]),
+    np.array([[1, 1], [1, 1]]),
+    np.array([[0, 1], [1, 1]])
+]
+
+# -------------------------------
+# Проверка стационарности
+# -------------------------------
+for i, A in enumerate(matrices, start=1):
+    eigvals = np.linalg.eigvals(A)
+    mod_eig = np.abs(eigvals)
+    is_stationary = np.all(mod_eig < 1)
+    
+    print(f"Матрица A{i}:\n{A}")
+    print(f"Собственные значения: {eigvals}")
+    print(f"Модули: {mod_eig}")
+    print(f"Стационарность: {'Да' if is_stationary else 'Нет'}\n")
+
+```
+
+Задание 8
+
+<img width="817" height="831" alt="image" src="https://github.com/user-attachments/assets/7feace0a-e05d-4d27-8447-9292f065bccf" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим VAR-модели
+\begin{align*}
+	& \begin{cases} x_t=x_{t-1}+u_t \\ y_t=y_{t-1}+v_t \end{cases} &
+	& \begin{cases} x_t=x_{t-1}+u_t \\ y_t=cx_{t}+v_t \end{cases} \\
+	& \begin{cases} x_t=x_{t-1}+u_t \\ y_t=x_{t}+x_{t-1}+v_t \end{cases} &
+	& \begin{cases} x_t=3x_{t-1}-7y_{t-1}+u_t \\ y_t=x_{t-1}-2.5y_{t-1}+v_t \end{cases}
+\end{align*}
+\begin{enumerate}
+	\item Запишите в матричном виде.
+	\item Проверить условие стационарности.
+	\item Какие ряды коинтегрированы?
+	\begin{itemize}
+		\item Если ряды коинтегрированы, то запишите VECM модель
+		и найдите коинтеграционные соотношения
+		\item Если ряды не коинтегрированы, то запишите VAR-модель для дифференцированных рядов.
+	\end{itemize}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 1️⃣ Определяем матрицы VAR
+# ----------------------------
+A_list = [
+    np.array([[1, 0], [0, 1]]),     # система 1
+    np.array([[1, 0], [1, 0]]),     # система 2 (c=1)
+    np.array([[1, 0], [2, 0]]),     # система 3
+    np.array([[3, -7], [1, -2.5]])  # система 4
+]
+
+# ----------------------------
+# 2️⃣ Проверка стационарности
+# ----------------------------
+print("Стационарность VAR(1) проверка:")
+for i, A in enumerate(A_list, start=1):
+    eigvals = np.linalg.eigvals(A)
+    print(f"\nСистема {i}:")
+    print("Матрица A:\n", A)
+    print("Собственные значения:", eigvals)
+    print("Стационарность:", "Да" if np.all(np.abs(eigvals)<1) else "Нет")
+
+# ----------------------------
+# 3️⃣ Генерация искусственных рядов (для примера)
+# ----------------------------
+# Чтобы показать построение VAR/VECM, сгенерируем случайные данные
+np.random.seed(42)
+T = 200
+data = pd.DataFrame(np.random.randn(T, 2), columns=['x', 'y'])
+
+# ----------------------------
+# 4️⃣ Проверка коинтеграции (Johansen test)
+# ----------------------------
+jres = coint_johansen(data, det_order=0, k_ar_diff=1)
+print("\nJohansen test eigenvalues:", jres.lr1)
+print("Критические значения 90%, 95%, 99%:", jres.cvt)
+
+# ----------------------------
+# 5️⃣ Построение VAR или VECM
+# ----------------------------
+# Если ряды не стационарны, берем разности
+data_diff = data.diff().dropna()
+
+# Пример VAR на разностях
+model_var = VAR(data_diff)
+results_var = model_var.fit(1)  # VAR(1)
+print("\nVAR(1) на разностях:")
+print(results_var.summary())
+
+# Пример VECM (если есть коинтеграция)
+vecm = VECM(data, k_ar_diff=1, coint_rank=1, deterministic='n')
+vecm_res = vecm.fit()
+print("\nVECM результат:")
+print("Коэффициенты корректирующего механизма (alpha):\n", vecm_res.alpha)
+print("Коэффициенты коинтеграции (beta):\n", vecm_res.beta)
+
+# ----------------------------
+# 6️⃣ Прогнозирование
+# ----------------------------
+# VAR прогноз
+lag_order = results_var.k_ar
+forecast_var = results_var.forecast(data_diff.values[-lag_order:], steps=10)
+forecast_var_df = pd.DataFrame(forecast_var, columns=['x','y'])
+print("\nVAR прогноз на 10 периодов:\n", forecast_var_df)
+
+# VECM прогноз
+vecm_forecast = vecm_res.predict(steps=10)
+vecm_forecast_df = pd.DataFrame(vecm_forecast, columns=['x','y'])
+print("\nVECM прогноз на 10 периодов:\n", vecm_forecast_df)
+
+# ----------------------------
+# 7️⃣ Визуализация
+# ----------------------------
+plt.figure(figsize=(10,5))
+plt.plot(data['x'], label='x')
+plt.plot(data['y'], label='y')
+plt.title("Сгенерированные ряды x и y")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 9
+
+<img width="709" height="268" alt="image" src="https://github.com/user-attachments/assets/bf8f6b86-4474-4481-a498-f6379927d535" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим $\VAR(1)$
+\begin{align*}
+	\vectx_t&=\matrixA\vectx_{t-1}+\vectu_t &
+	\vectx_t&=\begin{pmatrix} x_t \\ y_t \\ z_t \end{pmatrix} &
+	\vectu_t&=\begin{pmatrix} u_t \\ v_t \\ w_t \end{pmatrix}\sim WN(0,\Sigma)
+\end{align*}
+Проверьте условие стационарности для матриц
+\begin{align*}
+	\matrixA&=\begin{pmatrix}
+	0 & 1 & 3 \\ -1 & 0 & -2 \\ 0 & 0 & 0.5 \end{pmatrix} &
+	&\begin{pmatrix}
+		0 & 0 & 0.5 \\ 0.5 & 0 & 0 \\0 & 0.5 & 0
+	\end{pmatrix}
+\end{align*}
+\end{exercise}
+```
+
+Ответ
+
+```
+import numpy as np
+
+# ----------------------------
+# 1️⃣ Определяем матрицы A
+# ----------------------------
+A_list = [
+    np.array([[0, 1, 3],
+              [-1, 0, -2],
+              [0, 0, 0.5]]),
+    np.array([[0, 0, 0.5],
+              [0.5, 0, 0],
+              [0, 0.5, 0]])
+]
+
+# ----------------------------
+# 2️⃣ Проверка стационарности
+# ----------------------------
+for i, A in enumerate(A_list, start=1):
+    eigvals = np.linalg.eigvals(A)
+    print(f"\nМатрица {i}:")
+    print(A)
+    print("Собственные значения:", eigvals)
+    is_stationary = np.all(np.abs(eigvals) < 1)
+    print("Стационарна:" , "Да" if is_stationary else "Нет")
+
+```
+
+Задание 10
+
+<img width="775" height="330" alt="image" src="https://github.com/user-attachments/assets/8232fef8-3939-461a-a774-7db744861c87" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим $\VAR(2)$
+\begin{align*}
+	\vectx_t&=\matrixA_1\vectx_{t-1}+\matrixA_2\vectx_{t-2}+\vectu_t &
+	\vectx_t&=\begin{pmatrix} x_t \\ y_t \end{pmatrix} &
+	\vectu_t&=\begin{pmatrix} u_t \\ v_t \end{pmatrix}\sim
+	WN(0,\Sigma)
+\end{align*}
+Проверьте условие стационарности для матриц
+\begin{align*}
+	1)\,\,\matrixA_1&=\begin{pmatrix} 2 & 3 \\ 0 & 1 \end{pmatrix} &
+	\matrixA_2&=\begin{pmatrix} -1 & 3 \\ 0 & -0.25 \end{pmatrix} \\
+	2)\,\,\matrixA_1&=\begin{pmatrix} 0 & 0.5 \\ 0.5 & 0 \end{pmatrix} &
+	\matrixA_2&=\begin{pmatrix} 0 & -0.25 \\ -0.25 & 0 \end{pmatrix}
+\end{align*}
+\end{exercise}
+```
+
+Ответ
+
+```
+import numpy as np
+
+# ----------------------------
+# 1️⃣ Определяем матрицы
+# ----------------------------
+A_matrices = [
+    (np.array([[2, 3],
+               [0, 1]]),
+     np.array([[-1, 3],
+               [0, -0.25]])),
+    (np.array([[0, 0.5],
+               [0.5, 0]]),
+     np.array([[0, -0.25],
+               [-0.25, 0]]))
+]
+
+# ----------------------------
+# 2️⃣ Проверка стационарности через companion-матрицу
+# ----------------------------
+for i, (A1, A2) in enumerate(A_matrices, start=1):
+    # размерность
+    k = A1.shape[0]
+    # создаём companion-матрицу
+    top = np.hstack([A1, A2])
+    bottom = np.hstack([np.eye(k), np.zeros((k,k))])
+    companion = np.vstack([top, bottom])
+    
+    eigvals = np.linalg.eigvals(companion)
+    print(f"\nVAR(2) №{i}")
+    print("Companion-матрица:\n", companion)
+    print("Собственные значения:", eigvals)
+    is_stationary = np.all(np.abs(eigvals) < 1)
+    print("Стационарна:" , "Да" if is_stationary else "Нет")
+
+```
+
+Задание 11
+
+<img width="819" height="663" alt="image" src="https://github.com/user-attachments/assets/a873c53f-3f7a-42ba-b5bb-3a34058c2941" />
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим модели
+\begin{align*}
+	& \begin{cases} x_t=2x_{t-1}-x_{t-2}+u_t \\ y_t=1.5y_{t-1}-0.5y_{t-2}+v_t \end{cases} \\
+	& \begin{cases} x_t=1.5x_{t-1}+y_{t-1}-0.5x_{t-2}-y_{t-2}+u_t \\
+	y_t=-x_{t-1}-0.5y_{t-1}+x_{t-2}+1.5y_{t-2}+v_t \end{cases} \\
+	& \begin{cases} x_t=x_{t-1}+u_t \\ y_t=x_{t}+x_{t-1}+v_t \\ z_t= x_{t}+y_{t-1}+w_t \end{cases} \\
+	& \begin{cases} x_t=y_{t-1}+u_t \\ y_t=z_{t-1}+v_t \\ z_t= x_{t-1}+w_t \end{cases}
+\end{align*}
+\begin{enumerate}
+	\item Запишите в матричном виде.
+	\item Проверить условие стационарности.
+	\item Какие ряды коинтегрированы?
+	\begin{itemize}
+		\item Если ряды коинтегрированы, то запишите VECM модель
+		и найдите коинтеграционные соотношения
+		\item Если ряды не коинтегрированы, то запишите VAR-модель для дифференцированных рядов.
+	\end{itemize}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+import numpy as np
+from numpy.linalg import eigvals
+
+# ----------------------------
+# 1️⃣ Определение моделей
+# ----------------------------
+# Модель 1: x_t=2x_{t-1}-x_{t-2}+u_t, y_t=1.5y_{t-1}-0.5y_{t-2}+v_t
+A1_1 = np.array([[2,0], [0,1.5]])
+A2_1 = np.array([[-1,0], [0,-0.5]])
+
+# Модель 2
+A1_2 = np.array([[1.5,1], [-1,-0.5]])
+A2_2 = np.array([[-0.5,-1],[1,1.5]])
+
+# Модель 3: 3 переменные
+A1_3 = np.array([[1,0,0], [1,0,0], [1,0,0]])  # верхняя матрица A1
+A2_3 = np.array([[0,-1,0],[0,0,0],[0,0,0]])   # верхняя матрица A2 (пример, нужно уточнить)
+
+# Модель 4: 3 переменные
+A1_4 = np.array([[0,1,0],[0,0,1],[1,0,0]])
+A2_4 = np.zeros((3,3))
+
+models = [
+    (A1_1, A2_1, "Model 1"),
+    (A1_2, A2_2, "Model 2"),
+    (A1_3, A2_3, "Model 3"),
+    (A1_4, A2_4, "Model 4")
+]
+
+# ----------------------------
+# 2️⃣ Функция проверки стационарности VAR(2)
+# ----------------------------
+def check_stationarity(A1, A2):
+    k = A1.shape[0]
+    companion = np.vstack([
+        np.hstack([A1, A2]),
+        np.hstack([np.eye(k), np.zeros((k,k))])
+    ])
+    eig = eigvals(companion)
+    stationary = np.all(np.abs(eig) < 1)
+    return eig, stationary
+
+# ----------------------------
+# 3️⃣ Проверка моделей
+# ----------------------------
+for A1, A2, name in models:
+    eig, stationary = check_stationarity(A1, A2)
+    print(f"\n{name}:")
+    print("Собственные значения companion-матрицы:", eig)
+    print("Стационарна:" , "Да" if stationary else "Нет")
+
+```
