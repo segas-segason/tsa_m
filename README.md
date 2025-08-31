@@ -16,10 +16,6 @@
 	\item Визуализируйте ряд \(\diff^{1/2} y_t, \diff^{3/2} y_t\) (ширина временного окна 5)
 	\item Постройте диаграмму рассеяния \(y_t\) vs \(y_{t-1}\)
 	\item Постройте диаграмму рассеяния \(\diff y_t\) vs \(\Delta y_{t-1}\)
-	% \item вычислите \(\corr(y_t, y_{t-1})\) и 
-	% тестируйте его значимость (формально!)
-	% \item вычислите \(\corr(\diff y_t, \diff y_{t-1})\) и 
-	% тестируйте его значимость (формально!) 
 \end{enumerate}
 \end{exercise}
 ```
@@ -133,10 +129,6 @@ plt.show()
 	\item Визуализируйте ряд \(\diff^{1/2} y_t, \diff^{3/2} y_t\) (ширина временного окна 7)
 	\item Постройте диаграмму рассеяния \(y_t\) vs \(y_{t-1}\)
 	\item Постройте диаграмму рассеяния \(\diff y_t\) vs \(\Delta y_{t-1}\)
-	% \item вычислите \(\corr(y_t, y_{t-1})\) и 
-	% тестируйте его значимость (формально!)
-	% \item вычислите \(\corr(\diff y_t, \diff y_{t-1})\) и 
-	% тестируйте его значимость (формально!) 
 \end{enumerate}
 \end{exercise}
 ```
@@ -285,6 +277,145 @@ plt.plot(m2_quarterly.index.to_timestamp(), m2_quarterly['M2REALW'], marker="o")
 plt.title("Квартальные данные M2 (среднее за квартал)")
 plt.ylabel("M2")
 plt.xlabel("Год")
+plt.grid(True)
+plt.show()
+
+```
+
+
+Задание 4
+
+<img width="744" height="471" alt="image" src="https://github.com/user-attachments/assets/9ff44677-2539-4a6f-bdc2-2f416a7b30b8" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим месячные данные краткосрочной (3-х мес, \(rate1\)) и долгосрочной (10-ти лет., \(rate2\)))
+ставкам для США с 1990-01-01 по н.в. как многомерный временной ряд \(rates\).
+\begin{enumerate}
+	\item Задайте временной индекс
+	\item Визуализируйте ряд \(rates\) двумя способами
+	\begin{itemize}
+		\item раздельные графики
+		\item общий график (два ряда на одном графике)
+	\end{itemize}
+	\item Визуализируйте ряд \(\diff rates\) двумя способами
+	\item Визуализируйте ряд \(\diff^2 rates\) двумя способами
+	\item Постройте гистограммы для \(rates,\diff rates,\diff^2 rates\) двумя способами
+	\item Постройте диаграмму рассеяния \(rate1\) vs \(rate2\)
+	\item Постройте диаграмму рассеяния \(\diff rate1 \) vs \(\diff rate2\)
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ============================================================
+# Многомерный временной ряд ставок США: 3M (rate1), 10Y (rate2)
+# Задачи: визуализация, разности, гистограммы, scatter
+# ============================================================
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from pandas_datareader import data as web
+
+plt.style.use("ggplot")
+
+# --- 1. Загрузка данных из FRED ---
+start = "1990-01-01"
+rate1 = web.DataReader("DGS3MO", "fred", start=start)  # 3M T-Bill
+rate2 = web.DataReader("DGS10", "fred", start=start)   # 10Y Treasury
+
+# --- 2. Приводим к месячной частоте (среднее по месяцу) ---
+rate1_m = rate1.resample("M").mean()
+rate2_m = rate2.resample("M").mean()
+
+# --- 3. Объединяем в один DataFrame ---
+rates = pd.concat([rate1_m, rate2_m], axis=1)
+rates.columns = ["rate1", "rate2"]
+
+print("Первые наблюдения:\n", rates.head())
+
+# --- 4. Разности ---
+diff1 = rates.diff().dropna()
+diff2 = rates.diff().diff().dropna()
+
+# ============================================================
+# ВИЗУАЛИЗАЦИЯ
+# ============================================================
+
+# --- A. Раздельные графики (subplots) ---
+fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+rates["rate1"].plot(ax=axes[0], title="Краткосрочная ставка (3M)")
+rates["rate2"].plot(ax=axes[1], title="Долгосрочная ставка (10Y)")
+plt.tight_layout()
+plt.show()
+
+# --- B. Общий график ---
+rates.plot(figsize=(10, 5), title="Ставки США (3M vs 10Y)")
+plt.ylabel("Ставка, %")
+plt.show()
+
+# --- C. Разности (1-й порядок) ---
+fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+diff1["rate1"].plot(ax=axes[0], title="Δ rate1 (3M)")
+diff1["rate2"].plot(ax=axes[1], title="Δ rate2 (10Y)")
+plt.tight_layout()
+plt.show()
+
+diff1.plot(figsize=(10, 5), title="Δ rates (разности первого порядка)")
+plt.show()
+
+# --- D. Разности (2-й порядок) ---
+fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+diff2["rate1"].plot(ax=axes[0], title="Δ² rate1 (3M)")
+diff2["rate2"].plot(ax=axes[1], title="Δ² rate2 (10Y)")
+plt.tight_layout()
+plt.show()
+
+diff2.plot(figsize=(10, 5), title="Δ² rates (разности второго порядка)")
+plt.show()
+
+# --- E. Гистограммы (раздельные) ---
+rates.hist(figsize=(10, 5), bins=30)
+plt.suptitle("Гистограммы исходных ставок", y=1.02)
+plt.show()
+
+diff1.hist(figsize=(10, 5), bins=30)
+plt.suptitle("Гистограммы Δ rates", y=1.02)
+plt.show()
+
+diff2.hist(figsize=(10, 5), bins=30)
+plt.suptitle("Гистограммы Δ² rates", y=1.02)
+plt.show()
+
+# --- F. Гистограммы (на одном графике) ---
+rates.plot(kind="hist", alpha=0.5, bins=30, figsize=(10, 5), title="Rates histogram (overlay)")
+plt.show()
+
+diff1.plot(kind="hist", alpha=0.5, bins=30, figsize=(10, 5), title="Δ rates histogram (overlay)")
+plt.show()
+
+diff2.plot(kind="hist", alpha=0.5, bins=30, figsize=(10, 5), title="Δ² rates histogram (overlay)")
+plt.show()
+
+# --- G. Диаграммы рассеяния ---
+plt.figure(figsize=(6, 6))
+plt.scatter(rates["rate1"], rates["rate2"], alpha=0.6)
+plt.title("Scatter: rate1 vs rate2")
+plt.xlabel("3M rate")
+plt.ylabel("10Y rate")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(6, 6))
+plt.scatter(diff1["rate1"], diff1["rate2"], alpha=0.6, color="purple")
+plt.title("Scatter: Δ rate1 vs Δ rate2")
+plt.xlabel("Δ 3M rate")
+plt.ylabel("Δ 10Y rate")
 plt.grid(True)
 plt.show()
 
