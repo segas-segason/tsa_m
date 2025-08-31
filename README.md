@@ -953,3 +953,866 @@ print(f"r(5) = {acf_vals[5]:.3f}, значим? {r5_signif}, порог ±{thres
 print(f"r_part(5) = {pacf_vals[5]:.3f}, значим? {rpart5_signif}, порог ±{threshold:.3f}")
 
 ```
+
+
+3 Модель ARIMA 
+
+Задание 1
+
+
+<img width="784" height="339" alt="image" src="https://github.com/user-attachments/assets/57c26da2-e236-46d7-8a7c-086abd3adffb" />
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим модель ARIMA
+\begin{align*}
+	\phi(L)(1-L)^dy_t&=\theta(L)u_t & u_t&\sim WN(0,\sigma^2)
+\end{align*}
+для следующих многочленов
+\begin{center}
+	\begin{tabular}{l|c|c|c}
+		\textnumero & \(d\) & \(\phi(z)\) & \(\theta(z)\) \\ \hline
+		1 & 0 & \(1-z+0.25z^2\) & \(1+0.8z\) \\ \hline
+		2 & 0 & \(1+0.8z-0.7z^2\) & \(1+0.5z-0.8z^2\) \\ \hline
+		3 & 1 & \(1-0.2z+0.08z^2\) & \(1-0.3z-0.88z^2\) \\ \hline
+		4 & 2 & \(1+1.9z-0.2z^2\) & \(1-1.6z-0.36z^2\) \\ \hline
+	\end{tabular}
+\end{center}
+Для каждого случая проверьте условия стационарности и обратимости.
+Запишите спецификацию модели без использования лагового оператор.
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# ARIMA: проверка стационарности и обратимости
+# ======================================================
+
+import numpy as np
+import pandas as pd
+
+# Функция проверки корней и условий
+def check_stationarity_invertibility(phi_coeffs, theta_coeffs, d=0):
+    """
+    phi_coeffs: коэффициенты AR-полинома [1, -phi1, -phi2, ...] (как в лаговом представлении)
+    theta_coeffs: коэффициенты MA-полинома [1, theta1, theta2, ...]
+    d: порядок интегрирования
+    """
+    # AR корни
+    phi_roots = np.roots(phi_coeffs)
+    ar_stationary = np.all(np.abs(phi_roots) > 1)
+    
+    # MA корни
+    theta_roots = np.roots(theta_coeffs)
+    ma_invertible = np.all(np.abs(theta_roots) > 1)
+    
+    return phi_roots, ar_stationary, theta_roots, ma_invertible
+
+# ======================================================
+# Случай 1
+# phi(z) = 1 - z + 0.25 z^2
+# theta(z) = 1 + 0.8 z
+phi1 = [0.25, -1, 1]     # перевернули для numpy.roots
+theta1 = [0.8, 1]
+phi_roots, ar_stat, theta_roots, ma_inv = check_stationarity_invertibility(phi1, theta1)
+print("Случай 1:")
+print("AR корни:", phi_roots, "Стационарна?", ar_stat)
+print("MA корни:", theta_roots, "Обратима?", ma_inv)
+print("Модель без лагов: y_t - y_{t-1} +0.25 y_{t-2} = u_t + 0.8 u_{t-1}\n")
+
+# ======================================================
+# Случай 2
+# phi(z) = 1 + 0.8 z -0.7 z^2
+# theta(z) = 1 +0.5 z -0.8 z^2
+phi2 = [-0.7, 0.8, 1]
+theta2 = [-0.8, 0.5, 1]
+phi_roots, ar_stat, theta_roots, ma_inv = check_stationarity_invertibility(phi2, theta2)
+print("Случай 2:")
+print("AR корни:", phi_roots, "Стационарна?", ar_stat)
+print("MA корни:", theta_roots, "Обратима?", ma_inv)
+print("Модель без лагов: y_t +0.8 y_{t-1} -0.7 y_{t-2} = u_t +0.5 u_{t-1} -0.8 u_{t-2}\n")
+
+# ======================================================
+# Случай 3
+# phi(z) = 1 -0.2 z +0.08 z^2
+# theta(z) = 1 -0.3 z -0.88 z^2
+d3 = 1
+phi3 = [0.08, -0.2, 1]
+theta3 = [-0.88, -0.3, 1]
+phi_roots, ar_stat, theta_roots, ma_inv = check_stationarity_invertibility(phi3, theta3, d=d3)
+print("Случай 3 (d=1):")
+print("AR корни:", phi_roots, "Стационарна после разности?", ar_stat)
+print("MA корни:", theta_roots, "Обратима?", ma_inv)
+print("Модель без лагов: (y_t - y_{t-1}) -0.2(y_{t-1}-y_{t-2}) +0.08(y_{t-2}-y_{t-3}) = u_t -0.3 u_{t-1} -0.88 u_{t-2}\n")
+
+# ======================================================
+# Случай 4
+# phi(z) = 1 +1.9 z -0.2 z^2
+# theta(z) = 1 -1.6 z -0.36 z^2
+d4 = 2
+phi4 = [-0.2, 1.9, 1]
+theta4 = [-0.36, -1.6, 1]
+phi_roots, ar_stat, theta_roots, ma_inv = check_stationarity_invertibility(phi4, theta4, d=d4)
+print("Случай 4 (d=2):")
+print("AR корни:", phi_roots, "Стационарна после второй разности?", ar_stat)
+print("MA корни:", theta_roots, "Обратима?", ma_inv)
+print("Модель без лагов: (y_t -2y_{t-1}+y_{t-2}) +1.9(y_{t-1}-2y_{t-2}+y_{t-3}) -0.2(y_{t-2}-2y_{t-3}+y_{t-4}) = u_t -1.6 u_{t-1}-0.36 u_{t-2}\n")
+
+```
+
+ARIMA в Python
+
+Задание 1
+
+
+<img width="707" height="1010" alt="image" src="https://github.com/user-attachments/assets/8b2d8afc-421b-40b3-a311-7992667d69e3" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- логарифм US GDP (\textbf{квартальные данные}) с 1995 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}\small
+		\begin{tabular}{l|c|c}
+			Модель & drift/trend  & спецификация\\ \hline
+			ARIMA(1,0,1) & + & \(y_t=\alpha_0+\alpha_1t+\phi y_{t-1}+u_t+\theta u_{t-1}\)\\
+			ARIMA(1,1,0) & + & \(\diff y_t=\alpha_0+\phi\diff y_{t-1}+u_t\)\\
+			ARIMA(1,1,1) & - & \(\diff y_t=\phi\diff y_{t-1}+u_t+\theta u_{t-1}\) \\
+			ARIMA(1,2,0) & - & \(\diff^2 y_t=\phi\diff^2 y_{t-1}+u_t\)\\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/тренд?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ US GDP: ARIMA подгонка, прогноз, тесты единичного корня
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import yfinance as yf  # если нужно скачать данные из Yahoo
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Импорт данных
+# -----------------------------
+# Пример: если есть CSV с квартальным GDP
+# gdp = pd.read_csv('US_GDP_quarterly.csv', parse_dates=['Date'], index_col='Date')
+
+# Или через FRED
+import pandas_datareader.data as web
+gdp = web.DataReader('GDP', data_source='fred', start='1995-01-01', end='2023-12-31')
+
+# Логарифм ряда
+y = np.log(gdp['GDP'])
+
+# Задаём временной индекс как квартальный
+y.index = y.index.to_period('Q')
+y.plot(title='Log of US GDP')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+
+# ARIMA(1,0,1) с drift и trend
+model_101 = ARIMA(y, order=(1,0,1), trend='ct')  # 'c' = drift, 't' = trend
+res_101 = model_101.fit()
+print(res_101.summary())
+
+# Прогноз на 10 периодов
+forecast_101 = res_101.get_forecast(steps=10)
+forecast_101.predicted_mean.plot(title='Forecast ARIMA(1,0,1) with drift/trend')
+plt.show()
+
+# ARIMA(1,1,0) с drift
+model_110 = ARIMA(y, order=(1,1,0), trend='c')
+res_110 = model_110.fit()
+print(res_110.summary())
+
+forecast_110 = res_110.get_forecast(steps=10)
+forecast_110.predicted_mean.plot(title='Forecast ARIMA(1,1,0) with drift')
+plt.show()
+
+# ARIMA(1,1,1) без drift/trend
+model_111 = ARIMA(y, order=(1,1,1), trend='n')
+res_111 = model_111.fit()
+print(res_111.summary())
+
+forecast_111 = res_111.get_forecast(steps=10)
+forecast_111.predicted_mean.plot(title='Forecast ARIMA(1,1,1) no drift/trend')
+plt.show()
+
+# ARIMA(1,2,0) без drift/trend
+model_120 = ARIMA(y, order=(1,2,0), trend='n')
+res_120 = model_120.fit()
+print(res_120.summary())
+
+forecast_120 = res_120.get_forecast(steps=10)
+forecast_120.predicted_mean.plot(title='Forecast ARIMA(1,2,0) no drift/trend')
+plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+# Проверяем остатки: автокорреляция, нормальность
+for res, name in zip([res_101, res_110, res_111, res_120],
+                     ['ARIMA(1,0,1)', 'ARIMA(1,1,0)', 'ARIMA(1,1,1)', 'ARIMA(1,2,0)']):
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация (пример)
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+models = {'ARIMA101': (1,0,1), 'ARIMA110': (1,1,0), 'ARIMA111': (1,1,1), 'ARIMA120': (1,2,0)}
+
+for name, order in models.items():
+    errors = []
+    for train_index, test_index in tscv.split(y):
+        train, test = y.iloc[train_index], y.iloc[test_index]
+        model = ARIMA(train, order=order, trend='c' if order[1]==0 or order[1]==1 else 'n').fit()
+        pred = model.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужно дифференцировать")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+# Прогноз 10 периодов
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(np.arange(len(y)), y, label='Original')
+plt.plot(np.arange(len(y), len(y)+10), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 2
+
+<img width="803" height="588" alt="image" src="https://github.com/user-attachments/assets/855b96e7-1472-449e-ab97-e779cec92b14" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- логарифм US M2 (\textbf{месячные данные}) с 1995 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/trend \\ \hline
+			ARIMA(2,0,2) & + \\
+			ARIMA(2,1,0) & + \\
+			ARIMA(2,1,1) & - \\
+			ARIMA(1,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/тренд?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ US M2: ARIMA подгонка, прогноз, тесты единичного корня
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка данных
+# -----------------------------
+m2 = web.DataReader('M2SL', data_source='fred', start='1995-01-01', end='2023-12-31')
+y = np.log(m2['M2SL'])  # логарифм ряда
+y.index = y.index.to_period('M')  # месячный временной индекс
+
+y.plot(title='Log of US M2')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+# ARIMA(2,0,2) с drift/trend
+model_202 = ARIMA(y, order=(2,0,2), trend='ct')
+res_202 = model_202.fit()
+print(res_202.summary())
+res_202.get_forecast(steps=10).predicted_mean.plot(title='Forecast ARIMA(2,0,2)')
+plt.show()
+
+# ARIMA(2,1,0) с drift
+model_210 = ARIMA(y, order=(2,1,0), trend='c')
+res_210 = model_210.fit()
+print(res_210.summary())
+res_210.get_forecast(steps=10).predicted_mean.plot(title='Forecast ARIMA(2,1,0)')
+plt.show()
+
+# ARIMA(2,1,1) без drift/trend
+model_211 = ARIMA(y, order=(2,1,1), trend='n')
+res_211 = model_211.fit()
+print(res_211.summary())
+res_211.get_forecast(steps=10).predicted_mean.plot(title='Forecast ARIMA(2,1,1)')
+plt.show()
+
+# ARIMA(1,2,0) без drift/trend
+model_120 = ARIMA(y, order=(1,2,0), trend='n')
+res_120 = model_120.fit()
+print(res_120.summary())
+res_120.get_forecast(steps=10).predicted_mean.plot(title='Forecast ARIMA(1,2,0)')
+plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for res, name in zip([res_202, res_210, res_211, res_120],
+                     ['ARIMA(2,0,2)','ARIMA(2,1,0)','ARIMA(2,1,1)','ARIMA(1,2,0)']):
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+models = {'ARIMA202': (2,0,2), 'ARIMA210': (2,1,0), 'ARIMA211': (2,1,1), 'ARIMA120': (1,2,0)}
+
+for name, order in models.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        trend = 'ct' if order==(2,0,2) else 'c' if order==(2,1,0) else 'n'
+        model = ARIMA(train, order=order, trend=trend).fit()
+        pred = model.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(np.arange(len(y)), y, label='Original')
+plt.plot(np.arange(len(y), len(y)+10), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+Задание 3
+
+<img width="752" height="1066" alt="image" src="https://github.com/user-attachments/assets/554a98ca-b9ff-42a2-8bef-dc62340d7a7b" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- логарифм US M2 (\textbf{недельные данные}) с 1995 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/trend \\ \hline
+			ARIMA(3,0,2) & + \\
+			ARIMA(2,1,0) & + \\
+			ARIMA(2,1,1) & - \\
+			ARIMA(2,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/тренд?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ US M2: ARIMA подгонка, прогноз, тесты единичного корня (недельные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка данных (недельные)
+# -----------------------------
+m2_weekly = web.DataReader('M2SL', data_source='fred', start='1995-01-01', end='2023-12-31')
+y = np.log(m2_weekly['M2SL'])
+y.index = y.index.to_period('W')  # недельный временной индекс
+
+y.plot(title='Log of US M2 (Weekly)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA302': (3,0,2,'ct'),
+    'ARIMA210': (2,1,0,'c'),
+    'ARIMA211': (2,1,1,'n'),
+    'ARIMA220': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    # Прогноз на 10 недель
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.period_range(start=y.index[-1]+1, periods=10, freq='W'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 4
+
+<img width="787" height="1084" alt="image" src="https://github.com/user-attachments/assets/b89b1837-1081-4f8a-80bd-7b50cc57741a" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- 10-летняя ставка (treasury securities  with constant maturity 
+\textbf{месячные данные}) с 2000 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/const \\ \hline
+			ARIMA(2,0,2) & - \\
+			ARIMA(2,0,2) & + \\
+			ARIMA(2,1,0) & + \\
+			ARIMA(2,1,1) & - \\
+			ARIMA(2,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/const?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ 10-летней ставки: ARIMA подгонка, прогноз, тесты единичного корня (месячные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка месячных данных 10-летних казначейских облигаций
+# -----------------------------
+rate10 = web.DataReader('GS10', data_source='fred', start='2000-01-01', end='2023-12-31')
+y = rate10['GS10']
+y.index = y.index.to_period('M')  # месячный временной индекс
+
+y.plot(title='10-Year Treasury Yield (Monthly)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA202_nodrift': (2,0,2,'n'),  # без константы
+    'ARIMA202_const': (2,0,2,'c'),    # с константой
+    'ARIMA210_const': (2,1,0,'c'),
+    'ARIMA211_nodrift': (2,1,1,'n'),
+    'ARIMA220_nodrift': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    # Прогноз на 10 месяцев
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.period_range(start=y.index[-1]+1, periods=10, freq='M'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 5
+
+<img width="767" height="659" alt="image" src="https://github.com/user-attachments/assets/ee320d43-55ab-4e3a-b18e-b1d0f720d39a" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- 10-летняя ставка (treasury securities with constant matu\-ri\-ty) 
+(\textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/const \\ \hline
+			ARIMA(3,0,2) & - \\
+			ARIMA(3,0,2) & + \\
+			ARIMA(3,1,0) & + \\
+			ARIMA(3,1,1) & - \\
+			ARIMA(2,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/const?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ 10-летней ставки: ARIMA подгонка, прогноз, тесты единичного корня (дневные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка дневных данных 10-летних казначейских облигаций
+# -----------------------------
+rate10_daily = web.DataReader('GS10', data_source='fred', start='2010-01-01', end='2023-12-31')
+y = rate10_daily['GS10']
+y.index = pd.to_datetime(y.index)
+
+y.plot(title='10-Year Treasury Yield (Daily)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA302_nodrift': (3,0,2,'n'),  # без константы
+    'ARIMA302_const': (3,0,2,'c'),    # с константой
+    'ARIMA310_const': (3,1,0,'c'),
+    'ARIMA311_nodrift': (3,1,1,'n'),
+    'ARIMA220_nodrift': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    # Прогноз на 10 дней
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.date_range(start=y.index[-1]+pd.Timedelta(days=1), periods=10, freq='B'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 6
+
