@@ -1,4 +1,4 @@
-Работа с рядами в Python
+1 Работа с рядами в Python
 
 Задание 1
 
@@ -654,3 +654,302 @@ plt.show()
 
 ```
 
+
+2 ACF & PACF
+
+Во всех задачах по умолчанию уровень значимости 5\%. !!!!
+
+Задание 1
+
+<img width="750" height="192" alt="image" src="https://github.com/user-attachments/assets/33c98560-5a29-45de-b741-6bde349019b7" />
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим \textbf{квартальные} данные по ВВП США с 1990 Q1 по н.в. (ряд \(gdp\))
+и пусть \(y=\log(gdp)\)
+\begin{enumerate}
+	\item Постройте графики ACF и PACF для \(y_t, \diff y_t, \diff^2 y_t\)
+	\item Значимы ли \(r(3),r_{part}(3)\) для \(\diff y_t\)?
+	\item Вычислите  \(\{r(h)\}_{h=1}^3\) и \(\{r_{part}(h)\}_{h=1}^3\) для \(\diff y_t\)
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Задача 1: GDP США (квартальные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from pandas_datareader.data import DataReader
+import statsmodels.api as sm
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные по ВВП США с FRED
+gdp = DataReader("GDP", "fred", "1990-01-01")  # квартальные данные
+y = np.log(gdp['GDP'])  # логарифм ряда
+
+# 2. Построение графиков ACF и PACF
+def plot_acf_pacf(series, lags=20, title=""):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    plot_acf(series.dropna(), lags=lags, ax=axes[0])
+    plot_pacf(series.dropna(), lags=lags, ax=axes[1])
+    fig.suptitle(title)
+    plt.show()
+
+plot_acf_pacf(y, title="GDP: log level")
+plot_acf_pacf(y.diff(), title="GDP: first difference")
+plot_acf_pacf(y.diff().diff(), title="GDP: second difference")
+
+# 3. Вычисляем r(h) и r_part(h) для первых 3 лагов первой разности
+diff_y = y.diff().dropna()
+
+acf_vals = sm.tsa.stattools.acf(diff_y, nlags=3)
+pacf_vals = sm.tsa.stattools.pacf(diff_y, nlags=3)
+
+print("ACF r(h), h=1..3:", acf_vals[1:])
+print("PACF r_part(h), h=1..3:", pacf_vals[1:])
+
+# 4. Проверка значимости r(3) и r_part(3) на уровне 5%
+n = len(diff_y)
+threshold = 1.96 / np.sqrt(n)
+
+r3_signif = abs(acf_vals[3]) > threshold
+rpart3_signif = abs(pacf_vals[3]) > threshold
+
+print(f"r(3) = {acf_vals[3]:.3f}, значим? {r3_signif}, порог ±{threshold:.3f}")
+print(f"r_part(3) = {pacf_vals[3]:.3f}, значим? {rpart3_signif}, порог ±{threshold:.3f}")
+
+```
+
+
+Задание 2
+
+<img width="732" height="197" alt="image" src="https://github.com/user-attachments/assets/332738f7-bc55-4534-9f9f-f91ffea2fc3d" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим \textbf{месячные} данные по M2 США с 1990-01-01 по н.в. (ряд \(m2\))
+и пусть \(y=\log(m2)\)
+\begin{enumerate}
+	\item Постройте графики ACF и PACF для \(y_t, \diff y_t, \diff^2 y_t\)
+	\item Значимы ли \(r(4),r_{part}(4)\) для \(\diff y_t\)?
+	\item Вычислите  \(\{r(h)\}_{h=1}^3\) и \(\{r_{part}(h)\}_{h=1}^3\) для \(\diff y_t\)
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Задача 2: M2 США (месячные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from pandas_datareader.data import DataReader
+import statsmodels.api as sm
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные M2 с FRED
+m2 = DataReader("M2SL", "fred", "1990-01-01")  # месячные данные
+y = np.log(m2['M2SL'])  # логарифм ряда
+
+# 2. Построение графиков ACF и PACF
+def plot_acf_pacf(series, lags=20, title=""):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    plot_acf(series.dropna(), lags=lags, ax=axes[0])
+    plot_pacf(series.dropna(), lags=lags, ax=axes[1])
+    fig.suptitle(title)
+    plt.show()
+
+plot_acf_pacf(y, title="M2: log level")
+plot_acf_pacf(y.diff(), title="M2: first difference")
+plot_acf_pacf(y.diff().diff(), title="M2: second difference")
+
+# 3. Вычисляем r(h) и r_part(h) для первых 3 лагов первой разности
+diff_y = y.diff().dropna()
+
+acf_vals = sm.tsa.stattools.acf(diff_y, nlags=3)
+pacf_vals = sm.tsa.stattools.pacf(diff_y, nlags=3)
+
+print("ACF r(h), h=1..3:", acf_vals[1:])
+print("PACF r_part(h), h=1..3:", pacf_vals[1:])
+
+# 4. Проверка значимости r(4) и r_part(4) на уровне 5%
+n = len(diff_y)
+threshold = 1.96 / np.sqrt(n)
+
+# Для 4-го лага
+acf4 = sm.tsa.stattools.acf(diff_y, nlags=4)[4]
+pacf4 = sm.tsa.stattools.pacf(diff_y, nlags=4)[4]
+
+r4_signif = abs(acf4) > threshold
+rpart4_signif = abs(pacf4) > threshold
+
+print(f"r(4) = {acf4:.3f}, значим? {r4_signif}, порог ±{threshold:.3f}")
+print(f"r_part(4) = {pacf4:.3f}, значим? {rpart4_signif}, порог ±{threshold:.3f}")
+
+```
+
+
+Задание 3
+
+<img width="757" height="189" alt="image" src="https://github.com/user-attachments/assets/eef0cb45-6d8f-4808-bedb-bc7e282e5f7a" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим месячные данные по 3-х месячной ставки США с 2000-01 по н.в. (ряд \(y\))
+\begin{enumerate}
+	\item Постройте графики ACF и PACF для \(y_t, \diff y_t, \diff^2 y_t\)
+	\item Значимы ли \(r(3),r_{part}(3)\) для \(\diff y_t\)?
+	\item Вычислите  \(\{r(h)\}_{h=1}^3\) и \(\{r_{part}(h)\}_{h=1}^3\) для \(\diff y_t\)
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Задача 3: 3-месячная ставка США (месячные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from pandas_datareader.data import DataReader
+import statsmodels.api as sm
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные 3-месячной ставки США с FRED
+# T-Bill 3-Month: "TB3MS"
+y = DataReader("TB3MS", "fred", "2000-01-01")['TB3MS']
+
+# 2. Построение графиков ACF и PACF
+def plot_acf_pacf(series, lags=20, title=""):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    plot_acf(series.dropna(), lags=lags, ax=axes[0])
+    plot_pacf(series.dropna(), lags=lags, ax=axes[1])
+    fig.suptitle(title)
+    plt.show()
+
+plot_acf_pacf(y, title="3M ставка: уровень")
+plot_acf_pacf(y.diff(), title="3M ставка: первая разность")
+plot_acf_pacf(y.diff().diff(), title="3M ставка: вторая разность")
+
+# 3. Вычисляем r(h) и r_part(h) для первых 3 лагов первой разности
+diff_y = y.diff().dropna()
+
+acf_vals = sm.tsa.stattools.acf(diff_y, nlags=3)
+pacf_vals = sm.tsa.stattools.pacf(diff_y, nlags=3)
+
+print("ACF r(h), h=1..3:", acf_vals[1:])
+print("PACF r_part(h), h=1..3:", pacf_vals[1:])
+
+# 4. Проверка значимости r(3) и r_part(3) на уровне 5%
+n = len(diff_y)
+threshold = 1.96 / np.sqrt(n)
+
+r3_signif = abs(acf_vals[3]) > threshold
+rpart3_signif = abs(pacf_vals[3]) > threshold
+
+print(f"r(3) = {acf_vals[3]:.3f}, значим? {r3_signif}, порог ±{threshold:.3f}")
+print(f"r_part(3) = {pacf_vals[3]:.3f}, значим? {rpart3_signif}, порог ±{threshold:.3f}")
+
+```
+
+
+Задание 4
+
+<img width="701" height="205" alt="image" src="https://github.com/user-attachments/assets/dd2c9499-3dea-450e-ada3-1a329df860c5" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим данные по S\&P500 с 2000-01 по н.в. (ряд \(sp500\))
+и пусть \(y=\log(sp200)\)
+\begin{enumerate}
+	\item Постройте графики ACF и PACF для \(y_t, \diff y_t, \diff^2 y_t\)
+	\item Значимы ли \(r(5),r_{part}(5)\) для \(\diff y_t\)?
+	\item Вычислите  \(\{r(h)\}_{h=1}^3\) и \(\{r_{part}(h)\}_{h=1}^3\) для \(\diff y_t\)
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Задача 4: S&P500 (с 2000-01 по н.в.)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import yfinance as yf
+import statsmodels.api as sm
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные S&P500 через yfinance
+sp500 = yf.download("^GSPC", start="2000-01-01")['Adj Close']
+
+# 2. Создаем логарифм ряда
+y = np.log(sp500)
+
+# 3. Построение графиков ACF и PACF
+def plot_acf_pacf(series, lags=20, title=""):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    plot_acf(series.dropna(), lags=lags, ax=axes[0])
+    plot_pacf(series.dropna(), lags=lags, ax=axes[1])
+    fig.suptitle(title)
+    plt.show()
+
+plot_acf_pacf(y, title="S&P500: log level")
+plot_acf_pacf(y.diff(), title="S&P500: first difference")
+plot_acf_pacf(y.diff().diff(), title="S&P500: second difference")
+
+# 4. Вычисляем r(h) и r_part(h) для первых 3 лагов первой разности
+diff_y = y.diff().dropna()
+
+acf_vals = sm.tsa.stattools.acf(diff_y, nlags=5)   # до 5 лагов для проверки
+pacf_vals = sm.tsa.stattools.pacf(diff_y, nlags=5)
+
+print("ACF r(h), h=1..3:", acf_vals[1:4])
+print("PACF r_part(h), h=1..3:", pacf_vals[1:4])
+
+# 5. Проверка значимости r(5) и r_part(5) на уровне 5%
+n = len(diff_y)
+threshold = 1.96 / np.sqrt(n)
+
+r5_signif = abs(acf_vals[5]) > threshold
+rpart5_signif = abs(pacf_vals[5]) > threshold
+
+print(f"r(5) = {acf_vals[5]:.3f}, значим? {r5_signif}, порог ±{threshold:.3f}")
+print(f"r_part(5) = {pacf_vals[5]:.3f}, значим? {rpart5_signif}, порог ±{threshold:.3f}")
+
+```
