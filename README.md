@@ -92,5 +92,5 @@ sns.scatterplot(x=dy.shift(1), y=dy)
 plt.title("Δy_t vs Δy_{t-1}")
 plt.xlabel("Δy_{t-1}")
 plt.ylabel("Δy_t")
-```
 plt.show()
+```
