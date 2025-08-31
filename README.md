@@ -513,3 +513,144 @@ plt.ylabel("Δ² значение")
 plt.show()
 
 ```
+
+
+Задание 6
+
+<img width="725" height="249" alt="image" src="https://github.com/user-attachments/assets/e6f0d6d0-33aa-4eaf-9d2b-fd55d5f6f16f" />
+
+Текст
+
+```
+\begin{exercise}
+Из finance.yahoo.com загрузите данные по S\&P500 c 2005-01-01 по н.в. 
+\begin{enumerate}
+	\item Сформируйте месячный временной ряд из цены закрытия на последний день каждого месяца
+	\item Задайте для него временной индекс
+	\item Визуализируйте ряд
+	\item Визуализируйте первую и вторую логарифмические разности
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# --- exercise_sp500.py ---
+
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные по индексу S&P500 (^GSPC) с Yahoo Finance
+sp500 = yf.download("^GSPC", start="2005-01-01")
+
+# Берем только колонку 'Close'
+sp500 = sp500[["Close"]]
+
+# Формируем месячный ряд: берём последнюю цену в месяце (last)
+sp500_monthly = sp500.resample("M").last()
+
+# 2. Устанавливаем временной индекс (он уже есть после resample)
+# Для удобства назовем колонку
+sp500_monthly = sp500_monthly.rename(columns={"Close": "sp500"})
+
+# --- 3. Визуализация исходного ряда ---
+sp500_monthly.plot(figsize=(12, 6), title="S&P500: месячный ряд (цена закрытия)")
+plt.ylabel("Индекс")
+plt.show()
+
+# --- 4. Логарифмические разности ---
+log_sp500 = np.log(sp500_monthly)
+
+# Первая разность (лог-доходности)
+diff1 = log_sp500.diff()
+
+# Вторая разность
+diff2 = diff1.diff()
+
+# Визуализация первой разности
+diff1.plot(figsize=(12, 6), title="Первая логарифмическая разность (лог-доходности)")
+plt.ylabel("Δ log(S&P500)")
+plt.show()
+
+# Визуализация второй разности
+diff2.plot(figsize=(12, 6), title="Вторая логарифмическая разность")
+plt.ylabel("Δ² log(S&P500)")
+plt.show()
+
+```
+
+
+Задание 7
+
+<img width="725" height="221" alt="image" src="https://github.com/user-attachments/assets/ef33515f-5c16-48ea-9a61-65ce5b4a1495" />
+
+
+Текст
+
+```
+\begin{exercise}
+Из finance.yahoo.com загрузите данные c 2005-01-01 по н.в. по
+ценам закрытия S\&P500, Apple, Google
+\begin{enumerate}
+	\item Сформируйте многомерный ряд из цен закрытия на последний день каждого месяца
+	\item Визуализируйте многомерный ряд
+	\item Визуализируйте первую и вторую логарифмические разности
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# --- exercise_sp500_aapl_goog.py ---
+
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.style.use("ggplot")
+
+# 1. Загружаем данные: S&P500 (^GSPC), Apple (AAPL), Google (GOOG)
+tickers = ["^GSPC", "AAPL", "GOOG"]
+data = yf.download(tickers, start="2005-01-01")["Close"]
+
+# Формируем месячный ряд: берём последнюю цену в месяце
+data_monthly = data.resample("M").last()
+
+# Для удобства названия столбцов
+data_monthly = data_monthly.rename(
+    columns={"^GSPC": "S&P500", "AAPL": "Apple", "GOOG": "Google"}
+)
+
+# --- 2. Визуализация многомерного ряда ---
+data_monthly.plot(figsize=(12, 6), title="Месячный ряд: цены закрытия")
+plt.ylabel("Цена")
+plt.show()
+
+# --- 3. Первая и вторая логарифмические разности ---
+log_data = np.log(data_monthly)
+
+# Первая логарифмическая разность (лог-доходности)
+diff1 = log_data.diff()
+
+# Вторая логарифмическая разность
+diff2 = diff1.diff()
+
+# Визуализация первой разности
+diff1.plot(figsize=(12, 6), title="Первая логарифмическая разность (лог-доходности)")
+plt.ylabel("Δ log(price)")
+plt.show()
+
+# Визуализация второй разности
+diff2.plot(figsize=(12, 6), title="Вторая логарифмическая разность")
+plt.ylabel("Δ² log(price)")
+plt.show()
+
+```
+
