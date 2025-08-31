@@ -1,6 +1,7 @@
 Работа с рядами в Python
 
 Задание 1
+
 <img width="741" height="689" alt="image" src="https://github.com/user-attachments/assets/d7a3a15c-eb07-4c05-9321-78d37e03d0a6" />
 
 
