@@ -3,7 +3,9 @@
 Задание 1
 <img width="741" height="689" alt="image" src="https://github.com/user-attachments/assets/d7a3a15c-eb07-4c05-9321-78d37e03d0a6" />
 
+
 Ответ
+```
 # ============================================================
 # Анализ временных рядов ВВП США
 # gdp_t, y_t, Δy_t, Δ²y_t, дробные разности и scatter-графики
@@ -90,4 +92,5 @@ sns.scatterplot(x=dy.shift(1), y=dy)
 plt.title("Δy_t vs Δy_{t-1}")
 plt.xlabel("Δy_{t-1}")
 plt.ylabel("Δy_t")
+```
 plt.show()
