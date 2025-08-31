@@ -420,3 +420,96 @@ plt.grid(True)
 plt.show()
 
 ```
+
+
+Задание 5
+
+<img width="777" height="346" alt="image" src="https://github.com/user-attachments/assets/88108831-ea63-499c-b33e-94eaebf444c4" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим месячные данные по США
+\begin{itemize}
+	\item краткосрочная (3-х мес) ставка
+	\item долгосрочная (10-ти лет) ставка
+	\item логарифм денежной массы M2
+\end{itemize}
+с 2000-01-01 по н.в. как многомерный временной ряд
+\begin{enumerate}
+	\item задайте временной индекс
+	\item Визуализируйте многомерный ряд
+	\item Визуализируйте первую и вторую разность
+\end{enumerate}
+\end{exercise}
+```
+
+
+Ответ
+
+```
+# --- файл: exercise_multivariate.py ---
+
+# Импортируем библиотеки
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Загружаем данные (допустим, у нас есть CSV с колонками: date, rate1, rate2, m2)
+# Структура файла "us_data.csv":
+# date,rate1,rate2,m2
+# 2000-01-01,5.5,6.5,4500
+# ...
+data = pd.read_csv("us_data.csv", parse_dates=["date"])
+
+# Устанавливаем временной индекс
+data = data.set_index("date")
+
+# Логарифмируем денежную массу M2 (новый столбец 'log_m2')
+data["log_m2"] = np.log(data["m2"])
+
+# Оставляем только нужные колонки: rate1, rate2, log_m2
+df = data[["rate1", "rate2", "log_m2"]]
+
+# --- 2. Визуализируем многомерный ряд ---
+plt.style.use("ggplot")
+
+# Способ 1: Раздельные графики
+df.plot(subplots=True, figsize=(12, 8), title=["Rate1 (3m)", "Rate2 (10y)", "log(M2)"])
+plt.suptitle("Многомерный временной ряд (раздельные графики)", y=1.02)
+plt.show()
+
+# Способ 2: Все на одном графике
+df.plot(figsize=(12, 6), title="Многомерный временной ряд (общий график)")
+plt.ylabel("Значение")
+plt.show()
+
+# --- 3. Визуализируем первую разность ---
+df_diff1 = df.diff()
+
+# Раздельные графики
+df_diff1.plot(subplots=True, figsize=(12, 8), title=["ΔRate1", "ΔRate2", "Δlog(M2)"])
+plt.suptitle("Первая разность", y=1.02)
+plt.show()
+
+# Общий график
+df_diff1.plot(figsize=(12, 6), title="Первая разность (общий график)")
+plt.ylabel("Δ значение")
+plt.show()
+
+# --- 4. Визуализируем вторую разность ---
+df_diff2 = df.diff().diff()
+
+# Раздельные графики
+df_diff2.plot(subplots=True, figsize=(12, 8), title=["Δ²Rate1", "Δ²Rate2", "Δ²log(M2)"])
+plt.suptitle("Вторая разность", y=1.02)
+plt.show()
+
+# Общий график
+df_diff2.plot(figsize=(12, 6), title="Вторая разность (общий график)")
+plt.ylabel("Δ² значение")
+plt.show()
+
+```
