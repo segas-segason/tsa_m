@@ -19,93 +19,91 @@
 
 Ответ
 ```
-# ============================================================
-# Анализ временных рядов ВВП США
-# gdp_t, y_t, Δy_t, Δ²y_t, дробные разности и scatter-графики
-# ============================================================
-
-# --- Импортируем библиотеки ---
-import numpy as np
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from pandas_datareader import data as web   # для загрузки данных FRED
-from fracdiff import fracdiff               # для дробных разностей
+from pandas_datareader import data as pdr
 
-plt.style.use("ggplot")  # красивый стиль графиков
+# 1️⃣ Загружаем квартальные данные по ВВП США с FRED
+# Серия GDPC1 = Real GDP (Chain 2017 Dollars, Quarterly)
+gdp = pdr.DataReader("GDPC1", "fred", start="1990-01-01")
 
+# Задаём временной индекс (Quarterly)
+gdp.index = pd.PeriodIndex(gdp.index, freq="Q")
 
-# --- 1. Загружаем данные по ВВП ---
-# GDP = Gross Domestic Product (Quarterly, SAAR)
-gdp = web.DataReader('GDP', 'fred', start='1990-01-01')
+# Переименуем столбец
+gdp.columns = ["gdp"]
 
-# Индекс из FRED преобразуем в квартальный PeriodIndex
-gdp.index = gdp.index.to_period('Q')
+# Логарифм ряда
+gdp["y"] = np.log(gdp["gdp"])
 
-print("Первые наблюдения по ВВП:")
-print(gdp.head())
+# 2️⃣ Разности
+gdp["dy"] = gdp["y"].diff()
+gdp["d2y"] = gdp["dy"].diff()
 
+# 3️⃣ Полудифференцирование и 3/2-дифференцирование
+# Возьмем с помощью fractional differencing (скользящее окно 5)
+from statsmodels.tsa.tsatools import detrend
 
-# --- 2. Преобразования ряда ---
-# Берём логарифм ВВП (часто используют для стабилизации дисперсии)
-y = np.log(gdp['GDP'])
+def frac_diff(series, d, window=5):
+    """
+    Fractional differencing (approximation)
+    """
+    w = [1.]
+    for k in range(1, window):
+        w_ = -w[-1] * (d - k + 1) / k
+        w.append(w_)
+    w = np.array(w[::-1]).reshape(-1,1)
+    result = series.rolling(window).apply(lambda x: np.dot(w.T, x)[0])
+    return result
 
-# Первая разность Δy_t = y_t - y_{t-1}
-dy = y.diff()
+gdp["d12y"] = frac_diff(gdp["y"], 0.5, 5)
+gdp["d32y"] = frac_diff(gdp["y"], 1.5, 5)
 
-# Вторая разность Δ²y_t = Δy_t - Δy_{t-1}
-d2y = dy.diff()
+# 4️⃣ Визуализация
+fig, axs = plt.subplots(3,2, figsize=(14,10))
 
+# gdp и y
+axs[0,0].plot(gdp.index.to_timestamp(), gdp["gdp"], label="gdp")
+axs[0,0].set_title("GDP")
+axs[0,1].plot(gdp.index.to_timestamp(), gdp["y"], label="log(gdp)")
+axs[0,1].set_title("y = log(gdp)")
 
-# --- 3. Визуализация gdp_t, y_t, Δy_t, Δ²y_t ---
-fig, axes = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
+# diff и diff^2
+axs[1,0].plot(gdp.index.to_timestamp(), gdp["dy"], label="diff y")
+axs[1,0].set_title("Δ y")
+axs[1,1].plot(gdp.index.to_timestamp(), gdp["d2y"], label="diff^2 y")
+axs[1,1].set_title("Δ² y")
 
-y.plot(ax=axes[0], title="Логарифм ВВП (y_t)")
-dy.plot(ax=axes[1], title="Первая разность Δy_t")
-d2y.plot(ax=axes[2], title="Вторая разность Δ²y_t")
-gdp['GDP'].plot(ax=axes[3], title="Уровень ВВП (gdp_t)")
+# frac diff
+axs[2,0].plot(gdp.index.to_timestamp(), gdp["d12y"], label="diff^{1/2} y")
+axs[2,0].set_title("Δ^{1/2} y (окно=5)")
+axs[2,1].plot(gdp.index.to_timestamp(), gdp["d32y"], label="diff^{3/2} y")
+axs[2,1].set_title("Δ^{3/2} y (окно=5)")
 
+for ax in axs.ravel():
+    ax.legend()
 plt.tight_layout()
 plt.show()
 
+# 5️⃣ Диаграммы рассеяния
+fig, axs = plt.subplots(1,2, figsize=(12,5))
 
-# --- 4. Дробные разности ---
-# Подготовим данные (убираем NaN)
-y_clean = y.dropna().values
-
-# Δ^(1/2) y_t
-y_fd05, _ = fracdiff(y_clean, d=0.5, window=5)
-
-# Δ^(3/2) y_t
-y_fd15, _ = fracdiff(y_clean, d=1.5, window=5)
-
-# Преобразуем обратно в Series с тем же индексом
-y_fd05 = pd.Series(y_fd05, index=y.dropna().index)
-y_fd15 = pd.Series(y_fd15, index=y.dropna().index)
-
-# Визуализация дробных разностей
-fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-y_fd05.plot(ax=axes[0], title="Дробная разность Δ^(1/2) y_t (окно=5)")
-y_fd15.plot(ax=axes[1], title="Дробная разность Δ^(3/2) y_t (окно=5)")
-
-plt.tight_layout()
-plt.show()
-
-
-# --- 5. Scatter-графики ---
 # y_t vs y_{t-1}
-sns.scatterplot(x=y.shift(1), y=y)
-plt.title("y_t vs y_{t-1}")
-plt.xlabel("y_{t-1}")
-plt.ylabel("y_t")
-plt.show()
+axs[0].scatter(gdp["y"].shift(1), gdp["y"], alpha=0.6)
+axs[0].set_xlabel("y_{t-1}")
+axs[0].set_ylabel("y_t")
+axs[0].set_title("y_t vs y_{t-1}")
 
 # Δy_t vs Δy_{t-1}
-sns.scatterplot(x=dy.shift(1), y=dy)
-plt.title("Δy_t vs Δy_{t-1}")
-plt.xlabel("Δy_{t-1}")
-plt.ylabel("Δy_t")
+axs[1].scatter(gdp["dy"].shift(1), gdp["dy"], alpha=0.6, color="orange")
+axs[1].set_xlabel("Δ y_{t-1}")
+axs[1].set_ylabel("Δ y_t")
+axs[1].set_title("Δ y_t vs Δ y_{t-1}")
+
+plt.tight_layout()
 plt.show()
+
 ```
 
 Задание 2
