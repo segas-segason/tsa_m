@@ -95,3 +95,96 @@ plt.xlabel("Δy_{t-1}")
 plt.ylabel("Δy_t")
 plt.show()
 ```
+
+Задание 2
+
+<img width="746" height="266" alt="image" src="https://github.com/user-attachments/assets/dbeb147f-9556-43e5-b4a1-763da20b2d1a" />
+
+
+Ответ
+
+```
+# ============================================================
+# Анализ временных рядов M2 США (месячные данные)
+# m2_t, y_t, Δy_t, Δ²y_t, дробные разности и scatter-графики
+# ============================================================
+
+# --- Импорт библиотек ---
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pandas_datareader import data as web   # загрузка из FRED
+from fracdiff import fracdiff               # дробные разности
+
+plt.style.use("ggplot")
+
+
+# --- 1. Загружаем данные M2 ---
+# M2SL = Money Stock, Monthly, Seasonally Adjusted
+m2 = web.DataReader('M2SL', 'fred', start='1990-01-01')
+
+# Индекс делаем месячным PeriodIndex
+m2.index = m2.index.to_period('M')
+
+print("Первые наблюдения M2:")
+print(m2.head())
+
+
+# --- 2. Преобразования ---
+y = np.log(m2['M2SL'])    # логарифм
+dy = y.diff()             # первая разность
+d2y = dy.diff()           # вторая разность
+
+
+# --- 3. Визуализация рядов ---
+fig, axes = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
+
+m2['M2SL'].plot(ax=axes[0], title="M2 (уровень)")
+y.plot(ax=axes[1], title="Логарифм M2 (y_t)")
+dy.plot(ax=axes[2], title="Первая разность Δy_t")
+d2y.plot(ax=axes[3], title="Вторая разность Δ²y_t")
+
+plt.tight_layout()
+plt.show()
+
+
+# --- 4. Дробные разности ---
+# очищаем NaN
+y_clean = y.dropna().values
+
+# Δ^(1/2) y_t
+y_fd05, _ = fracdiff(y_clean, d=0.5, window=7)
+
+# Δ^(3/2) y_t
+y_fd15, _ = fracdiff(y_clean, d=1.5, window=7)
+
+# делаем Series с тем же индексом
+y_fd05 = pd.Series(y_fd05, index=y.dropna().index)
+y_fd15 = pd.Series(y_fd15, index=y.dropna().index)
+
+# графики
+fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+y_fd05.plot(ax=axes[0], title="Дробная разность Δ^(1/2) y_t (окно=7)")
+y_fd15.plot(ax=axes[1], title="Дробная разность Δ^(3/2) y_t (окно=7)")
+
+plt.tight_layout()
+plt.show()
+
+
+# --- 5. Scatter-графики ---
+# y_t vs y_{t-1}
+sns.scatterplot(x=y.shift(1), y=y)
+plt.title("y_t vs y_{t-1}")
+plt.xlabel("y_{t-1}")
+plt.ylabel("y_t")
+plt.show()
+
+# Δy_t vs Δy_{t-1}
+sns.scatterplot(x=dy.shift(1), y=dy)
+plt.title("Δy_t vs Δy_{t-1}")
+plt.xlabel("Δy_{t-1}")
+plt.ylabel("Δy_t")
+plt.show()
+
+```
