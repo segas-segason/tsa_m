@@ -1816,3 +1816,1783 @@ plt.show()
 
 Задание 6
 
+<img width="751" height="1067" alt="image" src="https://github.com/user-attachments/assets/13927853-e8d6-49b5-8dcb-0158646f8530" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- 3-месячная ставки (treasury bill, \textbf{месячные данные}) с 2000 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/const \\ \hline
+			ARIMA(2,0,2) & - \\
+			ARIMA(2,0,2) & + \\
+			ARIMA(2,1,0) & + \\
+			ARIMA(2,1,1) & - \\
+			ARIMA(2,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/const?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ 3-месячной ставки (месячные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка данных 3-месячных казначейских облигаций
+# -----------------------------
+rate3m = web.DataReader('TB3MS', data_source='fred', start='2000-01-01', end='2023-12-31')
+y = rate3m['TB3MS']
+y.index = pd.to_datetime(y.index)
+
+y.plot(title='3-Month Treasury Bill Yield (Monthly)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA202_nodrift': (2,0,2,'n'),  # без константы
+    'ARIMA202_const': (2,0,2,'c'),    # с константой
+    'ARIMA210_const': (2,1,0,'c'),
+    'ARIMA211_nodrift': (2,1,1,'n'),
+    'ARIMA220_nodrift': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    
+    # Прогноз на 10 месяцев
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.date_range(start=y.index[-1]+pd.DateOffset(months=1), periods=10, freq='M'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 7
+
+<img width="754" height="1070" alt="image" src="https://github.com/user-attachments/assets/2444b618-f5c8-4b40-9641-df8b747cbf31" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- 3-месячная ставки (treasury bill, \textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+	\begin{enumerate}
+		\item Подгоните модели
+		\begin{center}
+		\begin{tabular}{l|c}
+			Модель & drift/const \\ \hline
+			ARIMA(3,0,2) & - \\
+			ARIMA(3,0,2) & + \\
+			ARIMA(3,1,0) & + \\
+			ARIMA(3,1,1) & - \\
+			ARIMA(2,2,0) & - \\ \hline
+		\end{tabular}
+		\end{center} 
+		и постройте прогноз на 10 периодов. Значим ли снос/const?
+		\item Проведите диагностику каждой модели.
+		\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+	\end{enumerate}
+	\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+	\item Подгонка <<оптимальной модели>>
+	\begin{enumerate}
+		\item Подгоните <<оптимальную>> модель ARIMA
+		\item проведите её диагностику
+		\item Постройте прогноз на 10 периодов
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# ======================================================
+# Анализ 3-месячной ставки (дневные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import pandas_datareader.data as web
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка данных 3-месячных казначейских облигаций (дневные)
+# -----------------------------
+rate3m_daily = web.DataReader('TB3MS', data_source='fred', start='2010-01-01', end='2023-12-31')
+y = rate3m_daily['TB3MS'].dropna()  # удаляем пропуски
+y.index = pd.to_datetime(y.index)
+
+y.plot(title='3-Month Treasury Bill Yield (Daily)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA302_nodrift': (3,0,2,'n'),  # без константы
+    'ARIMA302_const': (3,0,2,'c'),    # с константой
+    'ARIMA310_const': (3,1,0,'c'),
+    'ARIMA311_nodrift': (3,1,1,'n'),
+    'ARIMA220_nodrift': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    
+    # Прогноз на 10 дней
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.date_range(start=y.index[-1]+pd.Timedelta(days=1), periods=10, freq='B'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 8
+
+<img width="759" height="624" alt="image" src="https://github.com/user-attachments/assets/cd0185ea-9481-4b6f-a2d4-0e66808a502c" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- логарифм S\&P500 (\textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгонка модели заданного порядка
+		\begin{enumerate}
+			\item Подгоните модели
+			\begin{center}
+			\begin{tabular}{l|c}
+				Модель & drift/const \\ \hline
+				ARIMA(2,0,2) & - \\
+				ARIMA(2,0,2) & + \\
+				ARIMA(2,1,0) & + \\
+				ARIMA(2,1,1) & - \\
+				ARIMA(2,2,0) & - \\ \hline
+			\end{tabular}
+			\end{center} 
+			и постройте прогноз на 10 периодов. Значим ли снос/const?
+			\item Проведите диагностику каждой модели.
+			\item Проведите кросс-валидацию каждой модели. Какая предпочтительней?
+		\end{enumerate}
+		\item Примените тесты единичного корня и найдите порядок интегрирования для \(y_t\). 
+		\item Подгонка <<оптимальной модели>>
+		\begin{enumerate}
+			\item Подгоните <<оптимальную>> модель ARIMA
+			\item проведите её диагностику
+			\item Постройте прогноз на 10 периодов
+		\end{enumerate}
+	\end{enumerate}
+	\end{exercise}
+```
+
+
+Ответ
+
+```
+# ======================================================
+# Анализ логарифма S&P500 (дневные данные)
+# ======================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+from pmdarima.arima import auto_arima
+from sklearn.model_selection import TimeSeriesSplit
+import yfinance as yf
+
+plt.style.use('ggplot')
+
+# -----------------------------
+# 1. Загрузка данных S&P500
+# -----------------------------
+sp500 = yf.download('^GSPC', start='2010-01-01', end='2023-12-31')['Adj Close']
+y = np.log(sp500).dropna()
+y.plot(title='Log S&P500 (Daily)')
+plt.show()
+
+# -----------------------------
+# 2. Подгонка моделей ARIMA
+# -----------------------------
+models_order = {
+    'ARIMA202_nodrift': (2,0,2,'n'),  # без константы
+    'ARIMA202_const': (2,0,2,'c'),    # с константой
+    'ARIMA210_const': (2,1,0,'c'),
+    'ARIMA211_nodrift': (2,1,1,'n'),
+    'ARIMA220_nodrift': (2,2,0,'n')
+}
+
+results = {}
+for name, (p,d,q,trend) in models_order.items():
+    model = ARIMA(y, order=(p,d,q), trend=trend)
+    res = model.fit()
+    results[name] = res
+    print(f"=== {name} ===")
+    print(res.summary())
+    
+    # Прогноз на 10 дней
+    forecast = res.get_forecast(steps=10).predicted_mean
+    plt.figure()
+    plt.plot(y.index, y, label='Original')
+    plt.plot(forecast.index, forecast, label='Forecast')
+    plt.title(f"{name} Forecast")
+    plt.legend()
+    plt.show()
+
+# -----------------------------
+# 3. Диагностика моделей
+# -----------------------------
+for name, res in results.items():
+    print(f"=== Диагностика {name} ===")
+    res.plot_diagnostics(figsize=(10,8))
+    plt.show()
+
+# -----------------------------
+# 4. Кросс-валидация
+# -----------------------------
+tscv = TimeSeriesSplit(n_splits=5)
+for name, (p,d,q,trend) in models_order.items():
+    errors = []
+    for train_idx, test_idx in tscv.split(y):
+        train, test = y.iloc[train_idx], y.iloc[test_idx]
+        res = ARIMA(train, order=(p,d,q), trend=trend).fit()
+        pred = res.forecast(len(test))
+        errors.append(np.mean((pred - test)**2))
+    print(f'{name} CV MSE: {np.mean(errors)}')
+
+# -----------------------------
+# 5. Тест единичного корня (ADF)
+# -----------------------------
+adf_result = adfuller(y)
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+if adf_result[1] < 0.05:
+    print("Ряд стационарен")
+else:
+    print("Ряд нестационарен, нужен порядок дифференцирования")
+
+# -----------------------------
+# 6. Автоматическая оптимальная ARIMA
+# -----------------------------
+auto_model = auto_arima(y, seasonal=False, stepwise=True, trace=True)
+print(auto_model.summary())
+
+forecast_auto = auto_model.predict(n_periods=10)
+plt.figure()
+plt.plot(y.index, y, label='Original')
+plt.plot(pd.date_range(start=y.index[-1]+pd.Timedelta(days=1), periods=10, freq='B'), forecast_auto, label='Forecast')
+plt.title("Optimal ARIMA Forecast")
+plt.legend()
+plt.show()
+
+```
+
+
+Задание 9
+
+
+<img width="542" height="345" alt="image" src="https://github.com/user-attachments/assets/3b1843ac-3fda-4b23-bb94-b54cad62e042" />
+
+
+Текст
+
+```
+\begin{exercise}
+Запишите спецификации следующих моделей
+\begin{enumerate}
+	\item ARIMA(0,1,1) без сноса и со сносом
+	\item ARIMA(0,1,2) без сноса и со сносом
+	\item ARIMA(1,1,0) без сноса и со сносом
+	\item ARIMA(2,1,0) без сноса и со сносом
+	\item ARIMA(0,2,0) без сноса и со сносом
+	\item ARIMA(1,2,0) без сноса и со сносом
+	\item ARIMA(0,2,1) без сноса и со сносом
+\end{enumerate}
+\end{exercise}
+```
+
+
+Ответ
+
+```
+# Импортируем нужные библиотеки
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+from statsmodels.tsa.arima.model import ARIMA
+
+# Допустим, y — твой временной ряд (например, log(GDP) или log(M2))
+# y = pd.Series(...)
+
+# Словарь с моделями: ключ = название модели, значение = (p,d,q, снос/const)
+models = {
+    "ARIMA(0,1,1)_no_drift": (0,1,1, False),
+    "ARIMA(0,1,1)_with_drift": (0,1,1, True),
+    "ARIMA(0,1,2)_no_drift": (0,1,2, False),
+    "ARIMA(0,1,2)_with_drift": (0,1,2, True),
+    "ARIMA(1,1,0)_no_drift": (1,1,0, False),
+    "ARIMA(1,1,0)_with_drift": (1,1,0, True),
+    "ARIMA(2,1,0)_no_drift": (2,1,0, False),
+    "ARIMA(2,1,0)_with_drift": (2,1,0, True),
+    "ARIMA(0,2,0)_no_drift": (0,2,0, False),
+    "ARIMA(0,2,0)_with_drift": (0,2,0, True),
+    "ARIMA(1,2,0)_no_drift": (1,2,0, False),
+    "ARIMA(1,2,0)_with_drift": (1,2,0, True),
+    "ARIMA(0,2,1)_no_drift": (0,2,1, False),
+    "ARIMA(0,2,1)_with_drift": (0,2,1, True),
+}
+
+# Пример подгонки всех моделей
+results = {}
+for name, (p,d,q,trend) in models.items():
+    # Подгонка модели
+    model = ARIMA(y, order=(p,d,q), trend='c' if trend else 'n')
+    fit = model.fit()
+    
+    # Сохраняем результат
+    results[name] = fit
+    print(f"{name}:\n", fit.summary(), "\n")
+
+```
+
+4 Модель (*)ARCH
+
+Задание 1
+
+<img width="766" height="1161" alt="image" src="https://github.com/user-attachments/assets/707562ae-3310-4a60-ab3c-5bfccbdd83d3" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть \(y_t\) -- лог-доходность US M2 (\textbf{недельные данные}) с 1995 по н.в.
+\begin{enumerate}
+	\item Подгоните модели AR-GARCH(p,o,q)
+	\begin{center}
+	\begin{tabular}{l|c}
+		Модель & \(\lambda\) \\ \hline
+		AR(1)-GARCH(1,0,1) & 2 \\
+		AR(1)-GARCH(1,0,1) & 1 \\
+		AR(1)-GARCH(1,1,1) & 2 \\
+		AR(2)-GARCH(1,0,1) & 2 \\
+		AR(2)-GARCH(1,0,1) & 1 \\ \hline
+	\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Сравните модели по информационным критериям. Какая предпочтительней?
+	\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\item Подгоните модели
+	\begin{center}
+		\begin{tabular}{l}
+			Модель  \\ \hline
+			AR(1)-EGARCH(1,0,1) \\
+			AR(1)-EGARCH(1,1,1) \\
+			AR(1)-APARCH(1,0,1) \\
+			AR(1)-APARCH(1,1,1)
+		\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Какая предпочтительней?
+\end{enumerate}
+\end{exercise}
+```
+
+
+Ответ
+
+```
+# Импортируем библиотеки
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from arch import arch_model
+
+# Предположим, y — это лог-доходность US M2 (еженедельные данные)
+# y = pd.Series(..., index=pd.date_range(...))
+
+# -------------------------------
+# 1. Подгонка AR-GARCH(p,o,q) моделей
+# -------------------------------
+
+# Список моделей
+ar_garch_models = [
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":1},
+    {"ar":1, "p":1, "o":1, "q":1, "lambda":2},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":1},
+]
+
+# Словарь для хранения результатов
+results_ar_garch = {}
+
+for m in ar_garch_models:
+    am = arch_model(y, mean='AR', lags=m["ar"],
+                    vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"],
+                    dist='normal')
+    res = am.fit(disp='off')
+    results_ar_garch[f'AR({m["ar"]})-GARCH({m["p"]},{m["o"]},{m["q"]})_lambda{m["lambda"]}'] = res
+    print(res.summary())
+    
+    # Прогноз на 10 периодов вперед
+    forecast = res.forecast(horizon=10)
+    print("Прогноз условной волатильности:\n", forecast.variance[-1:])
+
+# -------------------------------
+# 2. Сравнение по информационным критериям
+# -------------------------------
+for name, res in results_ar_garch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+# -------------------------------
+# 3. Кросс-валидация
+# -------------------------------
+# Можно реализовать с помощью rolling forecast или walk-forward validation
+# Пример:
+from sklearn.metrics import mean_squared_error
+
+rolling_window = 200  # пример: использовать последние 200 недель для обучения
+forecast_horizon = 1
+mses = {}
+
+for name, m in zip(results_ar_garch.keys(), ar_garch_models):
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y[i-rolling_window:i]
+        model = arch_model(train, mean='AR', lags=m["ar"],
+                           vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"])
+        fit = model.fit(disp='off')
+        pred = fit.forecast(horizon=forecast_horizon).mean.iloc[-1,0]
+        errors.append((y[i] - pred)**2)
+    mses[name] = np.mean(errors)
+
+best_model_name = min(mses, key=mses.get)
+print("Лучший вариант по кросс-валидации:", best_model_name)
+
+# -------------------------------
+# 4. Подгонка AR-EGARCH и AR-APARCH
+# -------------------------------
+egarch_aparch_models = [
+    {"vol":"EGARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"EGARCH", "p":1, "o":1, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":1, "q":1, "ar":1},
+]
+
+results_egarch_aparch = {}
+
+for m in egarch_aparch_models:
+    am = arch_model(y, mean='AR', lags=m["ar"], vol=m["vol"], p=m["p"], o=m["o"], q=m["q"], dist='normal')
+    res = am.fit(disp='off')
+    results_egarch_aparch[f'AR({m["ar"]})-{m["vol"]}({m["p"]},{m["o"]},{m["q"]})'] = res
+    print(res.summary())
+    
+    forecast = res.forecast(horizon=10)
+    print("Прогноз условной волатильности:\n", forecast.variance[-1:])
+
+# Сравнение по AIC/BIC и выбор наилучшей модели
+for name, res in results_egarch_aparch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+```
+
+Задание 2
+
+<img width="735" height="713" alt="image" src="https://github.com/user-attachments/assets/041c7ba1-2c9f-4c74-abe7-dc28a057cfeb" />
+
+Текст
+
+```
+\begin{exercise}
+Пусть ряд \(y_t\) -- первая разность 3-месячной ставки (treasury bill, \textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгоните модели AR-GARCH(p,o,q)
+	\begin{center}
+	\begin{tabular}{l|c}
+		Модель & \(\lambda\) \\ \hline
+		AR(1)-GARCH(1,0,1) & 2 \\
+		AR(1)-GARCH(1,0,1) & 1 \\
+		AR(1)-GARCH(1,1,1) & 2 \\
+		AR(2)-GARCH(1,0,1) & 2 \\
+		AR(2)-GARCH(1,0,1) & 1 \\ \hline
+	\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Сравните модели по информационным критериям. Какая предпочтительней?
+	\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\item Подгоните модели
+	\begin{center}
+		\begin{tabular}{l}
+			Модель  \\ \hline
+			AR(1)-EGARCH(1,0,1) \\
+			AR(1)-EGARCH(1,1,1) \\
+			AR(1)-APARCH(1,0,1) \\
+			AR(1)-APARCH(1,1,1)
+		\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Какая предпочтительней?
+\end{enumerate}
+\end{exercise}
+```
+
+Ответы
+
+```
+# -------------------------------
+# Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from arch import arch_model
+
+# Предположим, y — это первая разность 3-месячной ставки (дневные данные)
+# y = pd.Series(..., index=pd.date_range(...))
+
+# -------------------------------
+# 1. Подгонка AR-GARCH(p,o,q) моделей
+# -------------------------------
+ar_garch_models = [
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":1},
+    {"ar":1, "p":1, "o":1, "q":1, "lambda":2},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":1},
+]
+
+results_ar_garch = {}
+for m in ar_garch_models:
+    model_name = f'AR({m["ar"]})-GARCH({m["p"]},{m["o"]},{m["q"]})_lambda{m["lambda"]}'
+    am = arch_model(y, mean='AR', lags=m["ar"], 
+                    vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"],
+                    dist='normal')
+    res = am.fit(disp='off')
+    results_ar_garch[model_name] = res
+    print(res.summary())
+    
+    # Прогноз на 10 периодов вперед
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# -------------------------------
+# 2. Сравнение моделей по информационным критериям
+# -------------------------------
+for name, res in results_ar_garch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+# -------------------------------
+# 3. Кросс-валидация моделей (rolling forecast)
+# -------------------------------
+from sklearn.metrics import mean_squared_error
+
+rolling_window = 200  # пример: последние 200 дней для обучения
+forecast_horizon = 1
+mses = {}
+
+for name, m in zip(results_ar_garch.keys(), ar_garch_models):
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y[i-rolling_window:i]
+        model = arch_model(train, mean='AR', lags=m["ar"], 
+                           vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"])
+        fit = model.fit(disp='off')
+        pred = fit.forecast(horizon=forecast_horizon).mean.iloc[-1,0]
+        errors.append((y[i] - pred)**2)
+    mses[name] = np.mean(errors)
+
+best_model_name = min(mses, key=mses.get)
+print("Лучший вариант по кросс-валидации:", best_model_name)
+
+# -------------------------------
+# 4. Подгонка AR-EGARCH и AR-APARCH моделей
+# -------------------------------
+egarch_aparch_models = [
+    {"vol":"EGARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"EGARCH", "p":1, "o":1, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":1, "q":1, "ar":1},
+]
+
+results_egarch_aparch = {}
+for m in egarch_aparch_models:
+    model_name = f'AR({m["ar"]})-{m["vol"]}({m["p"]},{m["o"]},{m["q"]})'
+    am = arch_model(y, mean='AR', lags=m["ar"], vol=m["vol"], p=m["p"], o=m["o"], q=m["q"])
+    res = am.fit(disp='off')
+    results_egarch_aparch[model_name] = res
+    print(res.summary())
+    
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# Сравнение по AIC/BIC
+for name, res in results_egarch_aparch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+```
+
+
+Задание 3
+
+<img width="828" height="690" alt="image" src="https://github.com/user-attachments/assets/df9b7419-0746-4c3f-8660-1fc12ae572eb" />
+
+Текст
+
+```
+\begin{exercise}
+Пусть ряд \(y_t\) -- первая разность 10-летней ставки (treasury securities  with constant maturity, \textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгоните модели AR-GARCH(p,o,q)
+	\begin{center}
+	\begin{tabular}{l|c}
+		Модель & \(\lambda\) \\ \hline
+		AR(1)-GARCH(1,0,1) & 2 \\
+		AR(1)-GARCH(1,0,1) & 1 \\
+		AR(2)-GARCH(1,0,1) & 2 \\
+		AR(2)-GARCH(1,0,1) & 1 \\ \hline
+	\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Сравните модели по информационным критериям. Какая предпочтительней?
+	\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\item Подгоните модели
+	\begin{center}
+		\begin{tabular}{l}
+			Модель  \\ \hline
+			AR(1)-EGARCH(1,0,1) \\
+			AR(1)-EGARCH(1,1,1) \\
+			AR(1)-APARCH(1,0,1) \\
+			AR(1)-APARCH(1,1,1)
+		\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Какая предпочтительней?
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from arch import arch_model
+
+# -------------------------------
+# Предположим, y — это первая разность 10-летней ставки (дневные данные)
+# y = pd.Series(..., index=pd.date_range(...))
+# -------------------------------
+
+# -------------------------------
+# 1. Подгонка AR-GARCH(p,o,q) моделей
+# -------------------------------
+ar_garch_models = [
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":1},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":2, "p":1, "o":0, "q":1, "lambda":1},
+]
+
+results_ar_garch = {}
+for m in ar_garch_models:
+    model_name = f'AR({m["ar"]})-GARCH({m["p"]},{m["o"]},{m["q"]})_lambda{m["lambda"]}'
+    am = arch_model(y, mean='AR', lags=m["ar"], 
+                    vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"],
+                    dist='normal')
+    res = am.fit(disp='off')
+    results_ar_garch[model_name] = res
+    print(res.summary())
+    
+    # Прогноз на 10 периодов вперед
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# -------------------------------
+# 2. Сравнение моделей по информационным критериям
+# -------------------------------
+for name, res in results_ar_garch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+# -------------------------------
+# 3. Кросс-валидация моделей (rolling forecast)
+# -------------------------------
+from sklearn.metrics import mean_squared_error
+
+rolling_window = 200  # пример: последние 200 дней для обучения
+forecast_horizon = 1
+mses = {}
+
+for name, m in zip(results_ar_garch.keys(), ar_garch_models):
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y[i-rolling_window:i]
+        model = arch_model(train, mean='AR', lags=m["ar"], 
+                           vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"])
+        fit = model.fit(disp='off')
+        pred = fit.forecast(horizon=forecast_horizon).mean.iloc[-1,0]
+        errors.append((y[i] - pred)**2)
+    mses[name] = np.mean(errors)
+
+best_model_name = min(mses, key=mses.get)
+print("Лучший вариант по кросс-валидации:", best_model_name)
+
+# -------------------------------
+# 4. Подгонка AR-EGARCH и AR-APARCH моделей
+# -------------------------------
+egarch_aparch_models = [
+    {"vol":"EGARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"EGARCH", "p":1, "o":1, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":1, "q":1, "ar":1},
+]
+
+results_egarch_aparch = {}
+for m in egarch_aparch_models:
+    model_name = f'AR({m["ar"]})-{m["vol"]}({m["p"]},{m["o"]},{m["q"]})'
+    am = arch_model(y, mean='AR', lags=m["ar"], vol=m["vol"], p=m["p"], o=m["o"], q=m["q"])
+    res = am.fit(disp='off')
+    results_egarch_aparch[model_name] = res
+    print(res.summary())
+    
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# Сравнение по AIC/BIC
+for name, res in results_egarch_aparch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+```
+
+Задание 4
+
+<img width="757" height="1097" alt="image" src="https://github.com/user-attachments/assets/a87f0b66-014c-454a-af6c-03b81663a55f" />
+
+
+Текст
+
+```
+\begin{exercise}
+Пусть ряд \(y_t\) -- лог-доходность S\&P500 (\textbf{дневные данные}) с 2010 по н.в.
+\begin{enumerate}
+	\item Подгоните модели
+	\begin{center}
+	\begin{tabular}{l|c}
+		Модель & \(\lambda\) \\ \hline
+		AR(1)-GARCH(1,0,1) & 2 \\
+		AR(1)-GARCH(1,0,1) & 1 \\
+		AR(1)-GARCH(1,1,1) & 2 \\
+		AR(1)-GARCH(1,1,1) & 1 \\ \hline
+	\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности. 
+	\item Сравните модели по информационным критериям. Какая предпочтительней?
+	\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\item Подгоните модели
+	\begin{center}
+		\begin{tabular}{l}
+			Модель  \\ \hline
+			AR(1)-EGARCH(1,0,1) \\
+			AR(1)-EGARCH(1,1,1) \\
+			AR(1)-APARCH(1,0,1) \\
+			AR(1)-APARCH(1,1,1)
+		\end{tabular}
+	\end{center} 
+	и постройте прогноз на 10 периодов для ряда и его волатильности.
+	\item Какая предпочтительней?
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ 
+
+```
+# -------------------------------
+# Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from arch import arch_model
+from sklearn.metrics import mean_squared_error
+
+# -------------------------------
+# Пусть y — это лог-доходность S&P500 (дневные данные)
+# y = pd.Series(..., index=pd.date_range(...))
+# -------------------------------
+
+# -------------------------------
+# 1. Подгонка AR-GARCH(p,o,q) моделей
+# -------------------------------
+ar_garch_models = [
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":2},
+    {"ar":1, "p":1, "o":0, "q":1, "lambda":1},
+    {"ar":1, "p":1, "o":1, "q":1, "lambda":2},
+    {"ar":1, "p":1, "o":1, "q":1, "lambda":1},
+]
+
+results_ar_garch = {}
+for m in ar_garch_models:
+    model_name = f'AR({m["ar"]})-GARCH({m["p"]},{m["o"]},{m["q"]})_lambda{m["lambda"]}'
+    am = arch_model(y, mean='AR', lags=m["ar"], 
+                    vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"],
+                    dist='normal')
+    res = am.fit(disp='off')
+    results_ar_garch[model_name] = res
+    print(res.summary())
+    
+    # Прогноз на 10 периодов вперед
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# -------------------------------
+# 2. Сравнение моделей по информационным критериям
+# -------------------------------
+for name, res in results_ar_garch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+# -------------------------------
+# 3. Кросс-валидация моделей (rolling forecast)
+# -------------------------------
+rolling_window = 200  # последние 200 дней для обучения
+forecast_horizon = 1
+mses = {}
+
+for name, m in zip(results_ar_garch.keys(), ar_garch_models):
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y[i-rolling_window:i]
+        model = arch_model(train, mean='AR', lags=m["ar"], 
+                           vol='GARCH', p=m["p"], o=m["o"], q=m["q"], power=m["lambda"])
+        fit = model.fit(disp='off')
+        pred = fit.forecast(horizon=forecast_horizon).mean.iloc[-1,0]
+        errors.append((y[i] - pred)**2)
+    mses[name] = np.mean(errors)
+
+best_model_name = min(mses, key=mses.get)
+print("Лучший вариант по кросс-валидации:", best_model_name)
+
+# -------------------------------
+# 4. Подгонка AR-EGARCH и AR-APARCH моделей
+# -------------------------------
+egarch_aparch_models = [
+    {"vol":"EGARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"EGARCH", "p":1, "o":1, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":0, "q":1, "ar":1},
+    {"vol":"APARCH", "p":1, "o":1, "q":1, "ar":1},
+]
+
+results_egarch_aparch = {}
+for m in egarch_aparch_models:
+    model_name = f'AR({m["ar"]})-{m["vol"]}({m["p"]},{m["o"]},{m["q"]})'
+    am = arch_model(y, mean='AR', lags=m["ar"], vol=m["vol"], p=m["p"], o=m["o"], q=m["q"])
+    res = am.fit(disp='off')
+    results_egarch_aparch[model_name] = res
+    print(res.summary())
+    
+    forecast = res.forecast(horizon=10)
+    print(f"Прогноз волатильности для {model_name}:\n", forecast.variance[-1:])
+
+# Сравнение по AIC/BIC
+for name, res in results_egarch_aparch.items():
+    print(name, "AIC:", res.aic, "BIC:", res.bic)
+
+```
+
+
+5 Многомерные ряды. Модель VAR/VECM. Коинтеграция
+
+Задание 1
+
+<img width="804" height="1058" alt="image" src="https://github.com/user-attachments/assets/1d13ba69-78de-486b-9535-d2e2dca70d3b" />
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим \textbf{недельные} данные с 2000 г по н.в. по следующим переменными
+\begin{itemize}
+	\item первая разность 3-месячной ставки (3-Month Treasury Bill)
+	\item первая разность 6-месячной ставки (6-Month Treasury Bill)
+	\item первая разность 10-летней ставки (Treasury Securities at 10-Year Constant Maturity)
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Фиксированный порядок
+	\begin{enumerate}
+		\item Подгоните модели VAR(1), VAR(2), VAR(3)
+		\item постройте прогноз на 10 периодов по каждой модели
+		\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\end{enumerate}
+	\item <<Оптимизация>> порядка
+	\begin{enumerate}
+		\item Подгоните модель VAR <<оптимального>> порядка
+		\item Проведите её диагностику
+		\item Постройте прогноз на 5 периодов. Постройте FEVD
+		\item Постройте IRF, использую исходное упорядочивание переменных
+		\item Проведите тест Гренджера на причинность
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+
+# -------------------------------
+# 2. Загрузка и подготовка данных
+# -------------------------------
+# Предположим, что у вас есть CSV с колонками:
+# 'date', 'diff_3m', 'diff_6m', 'diff_10y'
+df = pd.read_csv('weekly_rates.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['diff_3m', 'diff_6m', 'diff_10y']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Первая разность процентных ставок")
+plt.show()
+
+# -------------------------------
+# 3. VAR фиксированного порядка
+# -------------------------------
+orders = [1,2,3]
+var_models = {}
+for p in orders:
+    model = VAR(y)
+    res = model.fit(p)
+    var_models[f'VAR({p})'] = res
+    print(f"VAR({p}) summary:\n", res.summary())
+    
+    # Прогноз на 10 периодов
+    forecast = res.forecast(y.values[-p:], steps=10)
+    forecast_df = pd.DataFrame(forecast, columns=y.columns)
+    print(f"Прогноз VAR({p}):\n", forecast_df)
+
+# -------------------------------
+# 4. Кросс-валидация моделей VAR
+# -------------------------------
+# Rolling forecast
+rolling_window = 200
+forecast_horizon = 1
+mses = {}
+
+for name, res in var_models.items():
+    p = res.k_ar
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y.iloc[i-rolling_window:i]
+        model = VAR(train)
+        fit = model.fit(p)
+        pred = fit.forecast(train.values[-p:], steps=forecast_horizon)[0]
+        errors.append(np.mean((y.iloc[i].values - pred)**2))
+    mses[name] = np.mean(errors)
+
+best_var_fixed = min(mses, key=mses.get)
+print("Лучший фиксированный VAR по MSE:", best_var_fixed)
+
+# -------------------------------
+# 5. Оптимизация порядка VAR
+# -------------------------------
+model_opt = VAR(y)
+res_opt = model_opt.select_order(maxlags=10)
+print("Рекомендованный порядок по критериям:\n", res_opt.summary())
+
+# Подгонка VAR оптимального порядка
+p_opt = res_opt.selected_orders['aic']  # например, AIC
+var_opt = model_opt.fit(p_opt)
+print(var_opt.summary())
+
+# Прогноз на 5 периодов
+forecast_opt = var_opt.forecast(y.values[-p_opt:], steps=5)
+forecast_opt_df = pd.DataFrame(forecast_opt, columns=y.columns)
+print("Прогноз VAR оптимального порядка:\n", forecast_opt_df)
+
+# FEVD (Forecast Error Variance Decomposition)
+fevd = var_opt.fevd(5)
+fevd.summary()  # покажет вклад шока каждой переменной
+
+# IRF (Impulse Response Function)
+irf = var_opt.irf(10)
+irf.plot(orth=False)  # исходное упорядочивание переменных
+plt.show()
+
+# -------------------------------
+# 6. Тест Гренджера на причинность
+# -------------------------------
+# Например, проверка, вызывает ли diff_3m diff_6m
+granger_test = grangercausalitytests(y[['diff_6m','diff_3m']], maxlag=5, verbose=True)
+
+```
+
+Задание 2
+
+<img width="732" height="634" alt="image" src="https://github.com/user-attachments/assets/59b805c2-6a45-4ae3-96d0-8c847a262eaf" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим \textbf{дневные} данные с 2000 г по н.в. по следующим переменными
+\begin{itemize}
+	\item первая разность 3-месячной ставки (3-Month Treasury Bill)
+	\item первая разность 6-месячной ставки (6-Month Treasury Bill)
+	\item первая разность 10-летней ставки (Treasury Securities at 10-Year Constant Maturity)
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Фиксированный порядок
+	\begin{enumerate}
+		\item Подгоните модели VAR(1), VAR(2), VAR(3)
+		\item постройте прогноз на 10 периодов по каждой модели
+		\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\end{enumerate}
+	\item <<Оптимизация>> порядка
+	\begin{enumerate}
+		\item Подгоните модель VAR <<оптимального>> порядка
+		\item Проведите её диагностику
+		\item Постройте прогноз на 5 периодов. Постройте FEVD
+		\item Постройте IRF, использую исходное упорядочивание переменных
+		\item Проведите тест Гренджера на причинность
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответы
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import grangercausalitytests
+
+# -------------------------------
+# 2. Загрузка и подготовка данных
+# -------------------------------
+# Предположим, что у вас есть CSV с колонками:
+# 'date', 'diff_3m', 'diff_6m', 'diff_10y'
+df = pd.read_csv('daily_rates.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['diff_3m', 'diff_6m', 'diff_10y']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Первая разность процентных ставок")
+plt.show()
+
+# -------------------------------
+# 3. VAR фиксированного порядка
+# -------------------------------
+orders = [1,2,3]
+var_models = {}
+for p in orders:
+    model = VAR(y)
+    res = model.fit(p)
+    var_models[f'VAR({p})'] = res
+    print(f"VAR({p}) summary:\n", res.summary())
+    
+    # Прогноз на 10 периодов
+    forecast = res.forecast(y.values[-p:], steps=10)
+    forecast_df = pd.DataFrame(forecast, columns=y.columns)
+    print(f"Прогноз VAR({p}):\n", forecast_df)
+
+# -------------------------------
+# 4. Кросс-валидация моделей VAR
+# -------------------------------
+rolling_window = 250  # например, 1 год торговых дней
+forecast_horizon = 1
+mses = {}
+
+for name, res in var_models.items():
+    p = res.k_ar
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y.iloc[i-rolling_window:i]
+        model = VAR(train)
+        fit = model.fit(p)
+        pred = fit.forecast(train.values[-p:], steps=forecast_horizon)[0]
+        errors.append(np.mean((y.iloc[i].values - pred)**2))
+    mses[name] = np.mean(errors)
+
+best_var_fixed = min(mses, key=mses.get)
+print("Лучший фиксированный VAR по MSE:", best_var_fixed)
+
+# -------------------------------
+# 5. Оптимизация порядка VAR
+# -------------------------------
+model_opt = VAR(y)
+res_opt = model_opt.select_order(maxlags=15)
+print("Рекомендованный порядок по критериям:\n", res_opt.summary())
+
+# Подгонка VAR оптимального порядка
+p_opt = res_opt.selected_orders['aic']  # например, по AIC
+var_opt = model_opt.fit(p_opt)
+print(var_opt.summary())
+
+# Прогноз на 5 периодов
+forecast_opt = var_opt.forecast(y.values[-p_opt:], steps=5)
+forecast_opt_df = pd.DataFrame(forecast_opt, columns=y.columns)
+print("Прогноз VAR оптимального порядка:\n", forecast_opt_df)
+
+# -------------------------------
+# 6. FEVD (Forecast Error Variance Decomposition)
+# -------------------------------
+fevd = var_opt.fevd(5)
+fevd.summary()  # покажет вклад шока каждой переменной
+
+# -------------------------------
+# 7. IRF (Impulse Response Function)
+# -------------------------------
+irf = var_opt.irf(10)
+irf.plot(orth=False)  # исходное упорядочивание переменных
+plt.show()
+
+# -------------------------------
+# 8. Тест Гренджера на причинность
+# -------------------------------
+# Пример: проверяем, вызывает ли diff_3m diff_6m
+granger_test = grangercausalitytests(y[['diff_6m','diff_3m']], maxlag=5, verbose=True)
+
+```
+
+Задание 3
+
+<img width="761" height="1105" alt="image" src="https://github.com/user-attachments/assets/c43f0db3-bac7-4a45-ba2f-fbe7d3f3c233" />
+
+
+Текст
+
+```
+\begin{exercise}
+Рассмотрим \textbf{месячные} данные с 1995 г по н.в. по следующим переменными
+\begin{itemize}
+	\item первая разность 3-месячной ставки (3-Month Treasury Bill)
+	\item первая разность 6-месячной ставки (6-Month Treasury Bill)
+	\item первая разность 10-летней ставки (Treasury Securities at 10-Year Constant Maturity)
+	\item лог-доходность US M2
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Фиксированный порядок
+	\begin{enumerate}
+		\item Подгоните модели VAR(1), VAR(2), VAR(3)
+		\item постройте прогноз на 10 периодов по каждой модели
+		\item Проведите кросс-валидацию моделей. Какая предпочтительней?
+	\end{enumerate}
+	\item <<Оптимизация>> порядка
+	\begin{enumerate}
+		\item Подгоните модель VAR <<оптимального>> порядка
+		\item Проведите её диагностику
+		\item Постройте прогноз на 5 периодов. Постройте FEVD
+		\item Постройте IRF, использую исходное упорядочивание переменных
+		\item Проведите тест Гренджера на причинность
+	\end{enumerate}
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import grangercausalitytests
+
+# -------------------------------
+# 2. Загрузка данных
+# -------------------------------
+# CSV должен содержать колонки:
+# 'date', 'diff_3m', 'diff_6m', 'diff_10y', 'log_ret_m2'
+df = pd.read_csv('monthly_rates_m2.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['diff_3m', 'diff_6m', 'diff_10y', 'log_ret_m2']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Месячные изменения ставок и M2")
+plt.show()
+
+# -------------------------------
+# 3. VAR фиксированного порядка
+# -------------------------------
+orders = [1,2,3]
+var_models = {}
+for p in orders:
+    model = VAR(y)
+    res = model.fit(p)
+    var_models[f'VAR({p})'] = res
+    print(f"VAR({p}) summary:\n", res.summary())
+    
+    # Прогноз на 10 месяцев
+    forecast = res.forecast(y.values[-p:], steps=10)
+    forecast_df = pd.DataFrame(forecast, columns=y.columns)
+    print(f"Прогноз VAR({p}):\n", forecast_df)
+
+# -------------------------------
+# 4. Кросс-валидация моделей VAR
+# -------------------------------
+rolling_window = 60  # 5 лет месяцев
+forecast_horizon = 1
+mses = {}
+
+for name, res in var_models.items():
+    p = res.k_ar
+    errors = []
+    for i in range(rolling_window, len(y)-forecast_horizon):
+        train = y.iloc[i-rolling_window:i]
+        model = VAR(train)
+        fit = model.fit(p)
+        pred = fit.forecast(train.values[-p:], steps=forecast_horizon)[0]
+        errors.append(np.mean((y.iloc[i].values - pred)**2))
+    mses[name] = np.mean(errors)
+
+best_var_fixed = min(mses, key=mses.get)
+print("Лучший фиксированный VAR по MSE:", best_var_fixed)
+
+# -------------------------------
+# 5. Оптимизация порядка VAR
+# -------------------------------
+model_opt = VAR(y)
+res_opt = model_opt.select_order(maxlags=12)  # макс 1 год
+print("Рекомендованный порядок по критериям:\n", res_opt.summary())
+
+p_opt = res_opt.selected_orders['aic']  # например, по AIC
+var_opt = model_opt.fit(p_opt)
+print(var_opt.summary())
+
+# Прогноз на 5 месяцев
+forecast_opt = var_opt.forecast(y.values[-p_opt:], steps=5)
+forecast_opt_df = pd.DataFrame(forecast_opt, columns=y.columns)
+print("Прогноз VAR оптимального порядка:\n", forecast_opt_df)
+
+# -------------------------------
+# 6. FEVD
+# -------------------------------
+fevd = var_opt.fevd(5)
+fevd.summary()  # вклад шока каждой переменной
+
+# -------------------------------
+# 7. IRF
+# -------------------------------
+irf = var_opt.irf(10)
+irf.plot(orth=False)
+plt.show()
+
+# -------------------------------
+# 8. Тест Гренджера на причинность
+# -------------------------------
+# Пример: проверяем, вызывает ли diff_3m diff_6m
+granger_test = grangercausalitytests(y[['diff_6m','diff_3m']], maxlag=5, verbose=True)
+
+```
+
+Задание 4
+
+<img width="804" height="913" alt="image" src="https://github.com/user-attachments/assets/b2068997-3803-4a27-a643-59b200423ed0" />
+
+Текст
+
+```
+\begin{exercise}[VECM]
+Рассмотрим \textbf{недельные} данные с 2005 г по н.в. по следующим переменными
+\begin{itemize}
+	\item 3-месячная ставки (3-Month Treasury Bill)
+	\item 6-месячная ставки (6-Month Treasury Bill)
+	\item 1-летняя ставка (Treasury Securities at 1-Year Constant Maturity)
+	\item 10-летняя ставка (Treasury Securities at 10-Year Constant Maturity)
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Найдите ранг коинтеграции
+	\item Оцените модель VECM <<оптимального>> порядка
+	\item Проведите её диагностику
+	\item Постройте прогноз на 5 периодов. Постройте FEVD
+	\item Постройте IRF, использую исходное упорядочивание переменных
+	\item Проведите тест Гренджера на причинность
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+from statsmodels.tsa.vector_ar.vecm import select_order
+from statsmodels.tsa.stattools import grangercausalitytests
+
+# -------------------------------
+# 2. Загрузка данных
+# -------------------------------
+# CSV должен содержать колонки:
+# 'date', 'rate_3m', 'rate_6m', 'rate_1y', 'rate_10y'
+df = pd.read_csv('weekly_rates.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['rate_3m','rate_6m','rate_1y','rate_10y']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Недельные ставки")
+plt.show()
+
+# -------------------------------
+# 3. Ранг коинтеграции (Johansen)
+# -------------------------------
+jres = coint_johansen(y, det_order=0, k_ar_diff=5)  # k_ar_diff = кол-во лагов в Δy
+print("Eigenvalues:", jres.lr1)
+print("Critical values (90/95/99%):\n", jres.cvt)
+
+# Ранг коинтеграции можно определить по сравнению lr1 с критическими значениями
+# Например:
+for i, val in enumerate(jres.lr1):
+    print(f"r ≤ {i}? LR1={val}, 95% критическое={jres.cvt[i,1]}")
+
+# -------------------------------
+# 4. Подгонка VECM <<оптимального>> порядка
+# -------------------------------
+# Определение оптимального числа лагов для Δy
+order_res = select_order(y, maxlags=10, deterministic="co")
+print("Рекомендованный порядок Δy:", order_res.summary())
+
+p_opt = order_res.aic  # например, по AIC
+
+vecm = VECM(y, k_ar_diff=p_opt, coint_rank=1, deterministic="co")  # r=1, можно менять
+vecm_res = vecm.fit()
+print(vecm_res.summary())
+
+# -------------------------------
+# 5. Прогноз на 5 периодов
+# -------------------------------
+forecast = vecm_res.predict(steps=5)
+forecast_df = pd.DataFrame(forecast, columns=y.columns)
+print("Прогноз VECM на 5 периодов:\n", forecast_df)
+
+# -------------------------------
+# 6. FEVD (Forecast Error Variance Decomposition)
+# -------------------------------
+# Для FEVD используем встроенные функции VAR после преобразования VECM в VAR
+from statsmodels.tsa.vector_ar.var_model import VAR
+
+vecm_to_var = vecm_res.predict(steps=len(y))  # только для построения VAR
+var_model = VAR(y.diff().dropna())
+var_res = var_model.fit(p_opt)
+fevd = var_res.fevd(5)
+fevd.summary()
+
+# -------------------------------
+# 7. IRF (Impulse Response Function)
+# -------------------------------
+irf = var_res.irf(10)
+irf.plot(orth=False)
+plt.show()
+
+# -------------------------------
+# 8. Тест Гренджера на причинность
+# -------------------------------
+# Пример: проверяем, вызывает ли 3M 6M
+granger_test = grangercausalitytests(y[['rate_6m','rate_3m']], maxlag=5, verbose=True)
+
+```
+
+Задание 5
+
+
+<img width="776" height="509" alt="image" src="https://github.com/user-attachments/assets/c4bcea33-9c44-4d49-9449-dc5144a24d71" />
+
+Текст
+
+```
+\begin{exercise}[VECM]
+Рассмотрим \textbf{месячные} данные с 2005 г по н.в. по следующим переменными
+\begin{itemize}
+	\item 3-месячная ставки (3-Month Treasury Bill)
+	\item 6-месячная ставки (6-Month Treasury Bill)
+	\item 1-летняя ставка (Treasury Securities at 1-Year Constant Maturity)
+	\item 10-летняя ставка (Treasury Securities at 10-Year Constant Maturity)
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Найдите ранг коинтеграции
+	\item Оцените модель VECM <<оптимального>> порядка
+	\item Проведите её диагностику
+	\item Постройте прогноз на 5 периодов. Постройте FEVD
+	\item Постройте IRF, использую исходное упорядочивание переменных
+	\item Проведите тест Гренджера на причинность
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+from statsmodels.tsa.vector_ar.vecm import select_order
+from statsmodels.tsa.stattools import grangercausalitytests
+from statsmodels.tsa.vector_ar.var_model import VAR
+
+# -------------------------------
+# 2. Загрузка данных
+# -------------------------------
+# CSV должен содержать колонки:
+# 'date', 'rate_3m', 'rate_6m', 'rate_1y', 'rate_10y'
+df = pd.read_csv('monthly_rates.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['rate_3m','rate_6m','rate_1y','rate_10y']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Месячные ставки")
+plt.show()
+
+# -------------------------------
+# 3. Ранг коинтеграции (Johansen)
+# -------------------------------
+jres = coint_johansen(y, det_order=0, k_ar_diff=12)  # 12 лагов в Δy (пример)
+print("Eigenvalues:", jres.lr1)
+print("Critical values (90/95/99%):\n", jres.cvt)
+
+# Определение r по сравнению lr1 с критическими значениями
+for i, val in enumerate(jres.lr1):
+    print(f"r ≤ {i}? LR1={val}, 95% критическое={jres.cvt[i,1]}")
+
+# -------------------------------
+# 4. Подгонка VECM <<оптимального>> порядка
+# -------------------------------
+order_res = select_order(y, maxlags=10, deterministic="co")
+print("Рекомендованный порядок Δy:", order_res.summary())
+
+p_opt = order_res.aic  # оптимальный лаг по AIC
+
+vecm = VECM(y, k_ar_diff=p_opt, coint_rank=1, deterministic="co")  # r=1, можно менять
+vecm_res = vecm.fit()
+print(vecm_res.summary())
+
+# -------------------------------
+# 5. Прогноз на 5 периодов
+# -------------------------------
+forecast = vecm_res.predict(steps=5)
+forecast_df = pd.DataFrame(forecast, columns=y.columns)
+print("Прогноз VECM на 5 периодов:\n", forecast_df)
+
+# -------------------------------
+# 6. FEVD (Forecast Error Variance Decomposition)
+# -------------------------------
+var_model = VAR(y.diff().dropna())
+var_res = var_model.fit(p_opt)
+fevd = var_res.fevd(5)
+fevd.summary()
+
+# -------------------------------
+# 7. IRF (Impulse Response Function)
+# -------------------------------
+irf = var_res.irf(10)
+irf.plot(orth=False)
+plt.show()
+
+# -------------------------------
+# 8. Тест Гренджера на причинность
+# -------------------------------
+# Пример: проверяем, вызывает ли 3M 6M
+granger_test = grangercausalitytests(y[['rate_6m','rate_3m']], maxlag=5, verbose=True)
+
+```
+
+
+Задание 6
+
+<img width="762" height="960" alt="image" src="https://github.com/user-attachments/assets/80a740b6-7e41-472d-897c-6253764aef41" />
+
+
+Текст
+
+```
+\begin{exercise}[VECM]
+Рассмотрим \textbf{месячные} данные с 1995 г по н.в. по следующим переменными
+\begin{itemize}
+	\item 3-месячная ставки (3-Month Treasury Bill)
+	\item 6-месячная ставки (6-Month Treasury Bill)
+	\item 1-летняя ставка (Treasury Securities at 1-Year Constant Maturity)
+	\item 10-летняя ставка (Treasury Securities at 10-Year Constant Maturity)
+	\item лог-M2
+\end{itemize}
+Сформируйте многомерный ряд и визуализируйте его.
+\begin{enumerate}
+	\item Найдите ранг коинтеграции
+	\item Оцените модель VECM <<оптимального>> порядка
+	\item Проведите её диагностику
+	\item Постройте прогноз на 5 периодов. Постройте FEVD
+	\item Постройте IRF, использую исходное упорядочивание переменных
+	\item Проведите тест Гренджера на причинность
+\end{enumerate}
+\end{exercise}
+```
+
+Ответ
+
+```
+# -------------------------------
+# 1. Импорт библиотек
+# -------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+from statsmodels.tsa.vector_ar.vecm import select_order
+from statsmodels.tsa.vector_ar.var_model import VAR
+from statsmodels.tsa.stattools import grangercausalitytests
+
+# -------------------------------
+# 2. Загрузка данных
+# -------------------------------
+# CSV должен содержать колонки:
+# 'date','rate_3m','rate_6m','rate_1y','rate_10y','log_m2'
+df = pd.read_csv('monthly_data.csv', parse_dates=['date'], index_col='date')
+
+# Формируем многомерный ряд
+y = df[['rate_3m','rate_6m','rate_1y','rate_10y','log_m2']]
+
+# Визуализация
+y.plot(figsize=(12,6), title="Месячные ставки и log-M2")
+plt.show()
+
+# -------------------------------
+# 3. Ранг коинтеграции (Johansen)
+# -------------------------------
+jres = coint_johansen(y, det_order=0, k_ar_diff=12)  # 12 лагов в Δy (пример)
+print("Eigenvalues:", jres.lr1)
+print("Critical values (90/95/99%):\n", jres.cvt)
+
+# Определение r по сравнению lr1 с критическими значениями
+for i, val in enumerate(jres.lr1):
+    print(f"r ≤ {i}? LR1={val}, 95% критическое={jres.cvt[i,1]}")
+
+# -------------------------------
+# 4. Подгонка VECM <<оптимального>> порядка
+# -------------------------------
+order_res = select_order(y, maxlags=12, deterministic="co")
+print("Рекомендованный лаг Δy:", order_res.summary())
+
+p_opt = order_res.aic  # используем оптимальный лаг по AIC
+vecm = VECM(y, k_ar_diff=p_opt, coint_rank=1, deterministic="co")  # r=1, можно менять
+vecm_res = vecm.fit()
+print(vecm_res.summary())
+
+# -------------------------------
+# 5. Прогноз на 5 периодов
+# -------------------------------
+forecast = vecm_res.predict(steps=5)
+forecast_df = pd.DataFrame(forecast, columns=y.columns)
+print("Прогноз VECM на 5 периодов:\n", forecast_df)
+
+# -------------------------------
+# 6. FEVD (Forecast Error Variance Decomposition)
+# -------------------------------
+var_model = VAR(y.diff().dropna())
+var_res = var_model.fit(p_opt)
+fevd = var_res.fevd(5)
+fevd.summary()
+
+# -------------------------------
+# 7. IRF (Impulse Response Function)
+# -------------------------------
+irf = var_res.irf(10)
+irf.plot(orth=False)
+plt.show()
+
+# -------------------------------
+# 8. Тест Гренджера на причинность
+# -------------------------------
+# Пример: проверяем, вызывает ли 3M 6M
+granger_test = grangercausalitytests(y[['rate_6m','rate_3m']], maxlag=5, verbose=True)
+
+```
