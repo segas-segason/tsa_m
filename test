@@ -87,9 +87,11 @@ y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', 
 #указание ряда
 y = y['MORTGAGE30US']
 # нужно поменять в information_criterion на bic или hqic и test на adf или какое в задании
-forecaster = AutoARIMA(information_criterion='hqic', test='adf')
-forecaster.fit(y)
-forecaster.get_fitted_params() #['order']
+arima_opt = pm.auto_arima(y, information_criterion='hqic', test='adf', seasonal=False)
+arima_opt.get_params()
+
+optimal_order = arima_opt.order
+print(f"Оптимальный порядок модели ARIMA: {optimal_order}")
 
 ------------------------------------------------------------------------------------------------------------------------------
 
