@@ -66,17 +66,88 @@ p = 2
 d = 1
 q = 2
 
+
+#bp файла time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
+import numpy as np
+import pandas as pd
+
+import pmdarima as pm
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+#меняем название с WTB3MS на MORTGAGE30US и дату
+y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
+#указание ряда
+y = y['MORTGAGE30US']
+# нужно поменять в information_criterion на bic или hqic и test на adf или какое в задании
+forecaster = AutoARIMA(information_criterion='hqic', test='adf')
+forecaster.fit(y)
+forecaster.get_fitted_params() #['order']
+
 ------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 3
 
 Из БД FRED скачайте недельные данные по '15-Year Fixed Rate Mortgage Average in the United States' (ряд с именем MORTGAGE15US) с 2010-01-01 по 2024-01-31. Пусть y - первая разность ставки
-Подгоните модель AR(2)-GARCH(1,1) с λ = 2 и постройте прогноз для ряда на один период. В ответе укажите значение прогноза, умноженное на 1000. Результат округлите до 2-х десятичных знаков.
+Подгоните модель AR(2)-GARCH(1,1) с λ = 2 и постройте прогноз для ряда на один период. 
+В ответе укажите значение прогноза, умноженное на 1000. Результат округлите до 2-х десятичных знаков.
 
 Ответ
 20.79 (неверно)
 
+Решение
 
+#файл time-series-analysis/jupyter-notebooks/garch-archpy.ipynb
+# шапка
+
+import numpy as np
+import pandas as pd
+
+from arch import arch_model
+
+from arch.univariate import ARX, GARCH, ARCHInMean 
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+# загружаем
+rate = web.DataReader(name='MORTGAGE15US', data_source='fred', start='2010-01-01', end='2024-01-31')
+# y первая разность ставки
+y = rate.diff().dropna()
+
+y.plot()
+plt.show()
+
+# Подгоним модель AR(2)-GARCH(1,1) AR 2 - указано в lags, где λ = 2 (указывается в power, вместо о=2)
+
+am = arch_model(y, mean='ARX', lags=2, vol='GARCH', p=1, q=1, power=2)
+
+res = am.fit()
+# указываем колво периодов в horizon у нас в задании 1
+y_forecasts = res.forecast(horizon=1)
+
+# Прогноз среднего
+y_forecasts.mean
+
+y_forecasts.residual_variance
+
+# прогноз волатильности
+y_forecasts.variance
+
+------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 4
 
@@ -86,7 +157,10 @@ q = 2
 Ответ
 -0.020 (неверно)
 
+Решение
 
+
+------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 5 ??????
 
