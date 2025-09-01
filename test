@@ -172,6 +172,7 @@ y_forecasts.variance
 Ответ (верно)
 
 
+------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 6
 
@@ -182,7 +183,56 @@ y_forecasts.variance
 Тестовая статистика = 196.286 (неверно)
 Вывод: Есть серийная корреляция (верно)
 
+Решение
+# time-series-analysis/jupyter-notebooks/arima-statsmodels.ipynb
 
+# шапка 
+import numpy as np
+import pandas as pd
+
+from statsmodels.tsa.api import ARIMA
+from statsmodels.stats.api import het_arch, acorr_ljungbox
+from statsmodels.graphics.tsaplots import plot_predict
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+# Не показывать ValueWarning, ConvergenceWarning из statsmodels
+from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
+warnings.simplefilter('ignore', category=ValueWarning)
+warnings.simplefilter('ignore', category=ConvergenceWarning)
+
+y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
+y = y['WAAA'].dropna()
+
+# подгоним ариму 211 со сносом тогда trend=с без сноса trend=n
+# спецификация модели
+mod = ARIMA(y, order=(2,1,1), trend='c', missing='drop')
+# подгонка модели на данных
+res = mod.fit()
+# выводим результаты подгонки
+res.summary(alpha=0.05)
+
+# теперь проведем тест на сер корреляцию lags на 8
+# корректировка степеней свободы: число оцениваемых коэффициентов = число параметров - 1 (-sigma2)
+model_df = mod.k_params-1
+# для тест отбрасываем первые d остатков (d=mod.k_diff)
+acorr_ljungbox(res.resid[mod.k_diff:] , lags=[8], model_df=model_df)
+
+# Вывод о наличии серийной корреляции на уровне значимости 1%
+if p_value < 0.01:
+    print("Вывод: На уровне значимости 1% отвергаем нулевую гипотезу об отсутствии серийной корреляции.")
+    print("В остатках модели присутствует серийная корреляция.")
+else:
+    print("Вывод: На уровне значимости 1% нет оснований отвергать нулевую гипотезу.")
+    print("В остатках модели отсутствует значимая серийная корреляция.")
+
+------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 7
 
@@ -196,6 +246,8 @@ d = 1 (верно)
 q = 1 (неверно)
 
 
+
+------------------------------------------------------------------------------------------------------------------------------
 
 Вопрос 8
 
