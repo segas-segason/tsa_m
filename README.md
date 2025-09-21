@@ -265,9 +265,44 @@ plt.show()
 <img width="1325" height="338" alt="image" src="https://github.com/user-attachments/assets/0d75639f-b37d-4220-8d3b-824ec13332fc" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+from statsmodels.tsa.api import ARIMA
+from statsmodels.stats.api import het_arch, acorr_ljungbox
+from statsmodels.graphics.tsaplots import plot_predict
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+# Не показывать ValueWarning, ConvergenceWarning из statsmodels
+from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
+warnings.simplefilter('ignore', category=ValueWarning)
+warnings.simplefilter('ignore', category=ConvergenceWarning)
+
+y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
+
+arima = pm.ARIMA(order=(2,1,1), trend='c')
+# подгонка модели и прогноз
+forecasts = arima.fit_predict(y, n_periods=10)
+forecasts
+
+res.plot_diagnostics(lags=8)
+
+plt.show()
+
+# корректировка степеней свободы: число оцениваемых коэффициентов = число параметров - 1 (-sigma2)
+model_df = mod.k_params-1
+# для тест отбрасываем первые d остатков (d=mod.k_diff)
+acorr_ljungbox(res.resid[mod.k_diff:] , lags=[8], model_df=model_df)
 ```
 
 
@@ -307,7 +342,32 @@ plt.show()
 ### Решение
 
 ```python
+import numpy as np
+import pandas as pd
 
+from statsmodels.tsa.seasonal import STL
+
+import pandas_datareader.data as web
+
+# настройки визуализация
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+# Не показывать ValueWarning, ConvergenceWarning из statsmodels
+from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
+warnings.simplefilter('ignore', category=ValueWarning)
+warnings.simplefilter('ignore', category=ConvergenceWarning)
+
+z = web.DataReader(name='TB3MS', data_source='fred', start='2000-01-01' end='2024-12-31')
+y = np.log(z)
+
+stl = STL(y, seasonal=7)
+res = stl.fit()
+
+res.plot()
+plt.show()
 ```
 
 
@@ -323,6 +383,34 @@ plt.show()
 ### Решение
 
 ```python
+import numpy as np
+import pandas as pd
+
+import pmdarima as pm
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
+
+arima = pm.ARIMA(order=(2,1,1), trend='n')
+forecasts = arima.fit_predict(y, n_periods=1)
+forecasts
+
+forecasts, conf_int = arima.predict(n_periods=1, return_conf_int=True, alpha=0.05)
+forecasts, conf_int
+
+arima.fit(y)
+arima.summary()
+
+arima.plot_diagnostics()
+plt.show()
 
 ```
 
