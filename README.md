@@ -13,7 +13,7 @@
 
 Решение
 
-''
+'''
 import numpy as np
 import pandas as pd
 
@@ -51,4 +51,4 @@ plt.show()
 
 # Финальное значение тренда
 print("Финальное значение локального тренда:", round(trend.iloc[-1], 2))
-''
+'''
