@@ -13,7 +13,6 @@
 
 Решение
 
-#Шапка библиотек
 import numpy as np
 import pandas as pd
 
@@ -21,10 +20,8 @@ from statsmodels.tsa.filters.hp_filter import hpfilter
 
 import pandas_datareader.data as web
 
-# настройки визуализация
 import matplotlib.pyplot as plt
 
-# Не показывать Warnings
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 # Не показывать ValueWarning, ConvergenceWarning из statsmodels
@@ -32,10 +29,8 @@ from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
 warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
-#Затем
 gdp = web.DataReader(name='UNRATENSA', data_source='fred', start="2000-01-01", end="2024-12-31")
 
-#здесь нужно указать наш ряд, а не логарифм
 y = gdp['UNRATENSA']
 
 #фильтруем с помощью Ходрика-Прескотта, HP filter (для месячных данных λ=14400)
