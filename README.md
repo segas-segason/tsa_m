@@ -99,7 +99,7 @@ print(f"Оптимальный порядок модели ARIMA: {optimal_order
 ## Задание 3
 
 Из БД FRED сĸачайте недельные данные по '15-ear Fixed Rate Mortgage Average in the United States' (ряд с именем MORTGAGE15US) с 2010-01-01 по 2024-01-31. Пусть у - первая разность ставĸи
-Подгоните модель AR(2)-GARCH(1,1) с 1 = 2 и постройте прогноз для ряда на один период. В ответе уĸажите значение прогноза, умноженное на 1000. Результат оĸруглите до 2-х десятичных знаĸов.
+Подгоните модель AR(2)-GARCH(1,1) с λ = 2 и постройте прогноз для ряда на один период. В ответе уĸажите значение прогноза, умноженное на 1000. Результат оĸруглите до 2-х десятичных знаĸов.
 
 <img width="1322" height="252" alt="image" src="https://github.com/user-attachments/assets/0b8e7970-330c-45fd-8a65-96aececed936" />
 
@@ -107,6 +107,7 @@ print(f"Оптимальный порядок модели ARIMA: {optimal_order
 Файл time-series-analysis/jupyter-notebooks/garch-archpy.ipynb
 
 ```python
+
 import numpy as np
 import pandas as pd
 
@@ -131,11 +132,12 @@ y = rate.diff().dropna()
 y.plot()
 plt.show()
 
-# Подгоним модель AR(2)-GARCH(1,1) AR 2 - указано в lags, где λ = 2 (указывается в power, вместо о=2)
+# Подгоним модель AR(2)-GARCH(1,1) AR 2 - указано в lags, где λ = 2 (указывается в power, вместо о=2), а p=1, q=1 это в скобках garch
 
 am = arch_model(y, mean='ARX', lags=2, vol='GARCH', p=1, q=1, power=2)
 
 res = am.fit()
+
 # указываем колво периодов в horizon у нас в задании 1
 y_forecasts = res.forecast(horizon=1)
 
