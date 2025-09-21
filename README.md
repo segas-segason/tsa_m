@@ -65,9 +65,33 @@ print("Финальное значение локального тренда:", 
 <img width="1360" height="413" alt="image" src="https://github.com/user-attachments/assets/bff53084-b087-439c-90cb-d0a650a0f55c" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+import pmdarima as pm
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+#меняем название с WTB3MS на MORTGAGE30US и дату
+y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
+#указание ряда
+y = y['MORTGAGE30US']
+# нужно поменять в information_criterion на bic или hqic и test на adf или какое в задании
+arima_opt = pm.auto_arima(y, information_criterion='hqic', test='adf', seasonal=False)
+arima_opt.get_params()
+
+optimal_order = arima_opt.order
+print(f"Оптимальный порядок модели ARIMA: {optimal_order}")
 ```
 
 
@@ -80,9 +104,48 @@ print("Финальное значение локального тренда:", 
 <img width="1322" height="252" alt="image" src="https://github.com/user-attachments/assets/0b8e7970-330c-45fd-8a65-96aececed936" />
 
 Решение
+Файл time-series-analysis/jupyter-notebooks/garch-archpy.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+from arch import arch_model
+
+from arch.univariate import ARX, GARCH, ARCHInMean 
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+# загружаем
+rate = web.DataReader(name='MORTGAGE15US', data_source='fred', start='2010-01-01', end='2024-01-31')
+# y первая разность ставки
+y = rate.diff().dropna()
+
+y.plot()
+plt.show()
+
+# Подгоним модель AR(2)-GARCH(1,1) AR 2 - указано в lags, где λ = 2 (указывается в power, вместо о=2)
+
+am = arch_model(y, mean='ARX', lags=2, vol='GARCH', p=1, q=1, power=2)
+
+res = am.fit()
+# указываем колво периодов в horizon у нас в задании 1
+y_forecasts = res.forecast(horizon=1)
+
+# Прогноз среднего
+y_forecasts.mean
+
+y_forecasts.residual_variance
+
+# прогноз волатильности
+y_forecasts.variance
 ```
 
 
