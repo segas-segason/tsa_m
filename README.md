@@ -190,9 +190,33 @@ y_forecasts.variance
 <img width="1316" height="296" alt="image" src="https://github.com/user-attachments/assets/905b7c0e-4b47-4be9-a593-5fe492bb0257" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+import pmdarima as pm
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
+
+# указывается арима order=(1,1,1)
+arima = pm.ARIMA(order=(1,1,1), trend='c')
+# подгонка модели и прогноз
+forecasts = arima.fit_predict(y, n_periods=10)
+forecasts
+
+forecasts, conf_int = arima.predict(n_periods=10, return_conf_int=True, alpha=0.05)
+forecasts, conf_int
 ```
 
 
