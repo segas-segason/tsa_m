@@ -34,7 +34,7 @@ warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
 #Затем
-gdp = web.DataReader(name='здесь указывается название ряда в нашем случае UNRATENSA', data_source='fred', start="2000-01-01", end="2024-12-31")
+gdp = web.DataReader(name='UNRATENSA', data_source='fred', start="2000-01-01", end="2024-12-31")
 
 #здесь нужно указать наш ряд, а не логарифм
 y = gdp['UNRATENSA']
