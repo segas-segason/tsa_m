@@ -64,7 +64,7 @@ ___
 
 <img width="1360" height="413" alt="image" src="https://github.com/user-attachments/assets/bff53084-b087-439c-90cb-d0a650a0f55c" />
 
-Решение
+### Решение
 
 ```python
 
@@ -94,7 +94,7 @@ ___
 
 <img width="1316" height="277" alt="image" src="https://github.com/user-attachments/assets/39bc4041-d59a-48a6-badd-060bbff951c3" />
 
-Решение
+### Решение
 
 ```python
 
@@ -109,7 +109,7 @@ ___
 
 <img width="1318" height="273" alt="image" src="https://github.com/user-attachments/assets/8968fd65-2bed-491d-a279-6c3f6d905345" />
 
-Решение
+### Решение
 
 ```python
 
@@ -124,7 +124,7 @@ ___
 
 <img width="1316" height="296" alt="image" src="https://github.com/user-attachments/assets/905b7c0e-4b47-4be9-a593-5fe492bb0257" />
 
-Решение
+### Решение
 
 ```python
 
@@ -139,7 +139,7 @@ ___
 
 <img width="1334" height="482" alt="image" src="https://github.com/user-attachments/assets/d1fca602-baa1-4b89-bfc3-ec8d568a184e" />
 
-Решение
+### Решение
 
 ```python
 
@@ -154,7 +154,7 @@ ___
 
 <img width="1325" height="338" alt="image" src="https://github.com/user-attachments/assets/0d75639f-b37d-4220-8d3b-824ec13332fc" />
 
-Решение
+### Решение
 
 ```python
 
@@ -166,7 +166,7 @@ ___
 
 <img width="909" height="534" alt="image" src="https://github.com/user-attachments/assets/13d4b631-92b7-4bdd-b576-c8124150528a" />
 
-Решение
+### Решение
 
 ```python
 
@@ -178,7 +178,7 @@ ___
 
 <img width="982" height="437" alt="image" src="https://github.com/user-attachments/assets/3ce1d58e-debb-4743-9994-f88739ceef74" />
 
-Решение
+### Решение
 
 ```python
 
@@ -194,7 +194,7 @@ ___
 
 <img width="989" height="196" alt="image" src="https://github.com/user-attachments/assets/d3ab0fac-d250-4221-892a-d2e02924cd2d" />
 
-Решение
+### Решение
 
 ```python
 
@@ -210,7 +210,7 @@ ___
 
 <img width="991" height="194" alt="image" src="https://github.com/user-attachments/assets/1ad5fafd-af35-4873-833e-c4e252e6be17" />
 
-Решение
+### Решение
 
 ```python
 
@@ -225,7 +225,7 @@ ___
 
 <img width="989" height="213" alt="image" src="https://github.com/user-attachments/assets/6bdb86b2-bc88-4191-9a9e-9a69d2ffb148" />
 
-Решение
+### Решение
 
 ```python
 
@@ -237,7 +237,7 @@ ___
 
 <img width="580" height="565" alt="image" src="https://github.com/user-attachments/assets/98773016-84c0-4fbf-9d84-742e5893871d" />
 
-Решение
+### Решение
 
 ```python
 
@@ -249,7 +249,7 @@ ___
 
 <img width="975" height="724" alt="image" src="https://github.com/user-attachments/assets/c4e710ba-ae06-4026-af71-b4d58ecda258" />
 
-Решение
+### Решение
 
 ```python
 
@@ -264,7 +264,7 @@ ___
 
 <img width="999" height="258" alt="image" src="https://github.com/user-attachments/assets/4e3dcbfa-6f66-4f04-8d70-a3174c1f8bb5" />
 
-Решение
+### Решение
 
 ```python
 
@@ -279,7 +279,7 @@ ___
 
 <img width="994" height="414" alt="image" src="https://github.com/user-attachments/assets/ce2eccd5-d804-4dbb-a421-be267898772b" />
 
-Решение
+### Решение
 
 ```python
 
@@ -294,7 +294,7 @@ ___
 
 <img width="991" height="210" alt="image" src="https://github.com/user-attachments/assets/209057e0-444c-40f2-8498-fee1cb8a0e33" />
 
-Решение
+### Решение
 
 ```python
 
@@ -309,7 +309,7 @@ ___
 
 <img width="991" height="447" alt="image" src="https://github.com/user-attachments/assets/1226582b-d4a3-4674-8938-2a166949f246" />
 
-Решение
+### Решение
 
 ```python
 
