@@ -231,7 +231,28 @@ forecasts, conf_int
 ### Решение
 
 ```python
+import numpy as np
+import pandas as pd
 
+import pmdarima as pm
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
+
+arima = pm.ARIMA(order=(1,1,1), trend='n')
+arima.fit(y)
+arima.summary()
+
+arima.plot_diagnostics()
+plt.show()
 ```
 
 
