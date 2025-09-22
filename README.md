@@ -395,6 +395,7 @@ print(result.summary())
 <img width="989" height="196" alt="image" src="https://github.com/user-attachments/assets/d3ab0fac-d250-4221-892a-d2e02924cd2d" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/stl-statsmodels.ipynb
 
 ```python
 import numpy as np
