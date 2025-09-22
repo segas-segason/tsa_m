@@ -474,7 +474,7 @@ from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
 warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
-z = web.DataReader(name='TB3MS', data_source='fred', start='2000-01-01' end='2024-12-31')
+z = web.DataReader(name='TB3MS', data_source='fred', start='2000-01-01', end='2024-12-31')
 y = np.log(z)
 
 stl = STL(y, seasonal=7)
