@@ -51,7 +51,7 @@ plt.show()
 plt.plot(cycle)
 plt.show()
 
-# Финальное значение тренда
+# Финальное значение тренда + округление
 print("Финальное значение локального тренда:", round(trend.iloc[-1], 2))
 ```
 
@@ -82,16 +82,22 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
+
 #меняем название с WTB3MS на MORTGAGE30US и дату
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
 #указание ряда
 y = y['MORTGAGE30US']
+
 # нужно поменять в information_criterion на bic или hqic и test на adf или какое в задании
 arima_opt = pm.auto_arima(y, information_criterion='hqic', test='adf', seasonal=False)
 arima_opt.get_params()
 
 optimal_order = arima_opt.order
 print(f"Оптимальный порядок модели ARIMA: {optimal_order}")
+
+# Вывод сводки модели
+print("\nСводка оптимальной модели:")
+print(arima_opt.summary())
 ```
 
 
@@ -134,20 +140,21 @@ plt.show()
 
 # Подгоним модель AR(2)-GARCH(1,1) AR 2 - указано в lags, где λ = 2 (указывается в power, вместо о=2), а p=1, q=1 это в скобках garch
 
-am = arch_model(y, mean='ARX', lags=2, vol='GARCH', p=1, q=1, power=2)
+am = arch_model(y, mean='AR', lags=2, vol='GARCH', p=1, q=1, power=2)
 
 res = am.fit()
 
 # указываем колво периодов в horizon у нас в задании 1
 y_forecasts = res.forecast(horizon=1)
 
-# Прогноз среднего
-y_forecasts.mean
+# Получение прогноза для среднего значения (первый период)
+mean_forecast = forecast.mean.iloc[-1, 0]  # Последняя строка, первый столбец
 
-y_forecasts.residual_variance
+# Умножение на 1000 и округление до 2-х десятичных знаков
+result = round(mean_forecast * 1000, 2)
 
-# прогноз волатильности
-y_forecasts.variance
+print(f"Прогноз на один период вперед: {mean_forecast:.6f}")
+print(f"Прогноз, умноженный на 1000: {result}")
 ```
 
 
@@ -209,7 +216,7 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
 
-# указывается арима order=(1,1,1)
+# указывается арима order=(1,1,1) со сносом
 arima = pm.ARIMA(order=(1,1,1), trend='c')
 # подгонка модели и прогноз
 forecasts = arima.fit_predict(y, n_periods=10)
@@ -221,7 +228,7 @@ forecasts, conf_int
 
 
 
-## Задание 7
+## Задание 7 !!!
 
 Из БД FRED сĸачайте недельные данные по '30-year Fixed Rate Mortgage Average in the United States' (ряд с именем MORTGAGE30US) с 2005-01-01 по 2024-01-31 и создайте ряд у.
 Подгоните модель ARIMA(1, 1, 1) БЕЗ СНОСА и уĸажите ĸоэффициенты. Ответ оĸруглите до 3-х десятичных знаĸов.
@@ -257,7 +264,7 @@ plt.show()
 
 
 
-## Задание 8
+## Задание 8 !!!
 
 Из БД FRED сĸачайте недельные данные по 'Moody's Seasoned Aaa Corporate Bond Yield' (ряд с именем WAAA) с 2005-01-01 по 2024-01-31 и создайте ряд у.
 Подгоните модель ARIMA(2,1,1) со сносом и проведите тест на серийную ĸорреляцию. Число лагов возьмите равным 8. В ответе уĸажите тестовую статистиĸу и сделайте вывод. Ответ оĸруглите до 3-х десятичных знаĸов. Уровень значимости 1%
@@ -368,6 +375,15 @@ res = stl.fit()
 
 res.plot()
 plt.show()
+
+# Получение значения локального тренда в финальной точке
+trend_component = res.trend
+final_trend_value = trend_component.iloc[-1]
+
+# Округление до 2 десятичных знаков
+result = round(final_trend_value, 2)
+
+print(f"Значение локального тренда в финальной точке: {result}")
 ```
 
 
@@ -403,14 +419,14 @@ arima = pm.ARIMA(order=(2,1,1), trend='n')
 forecasts = arima.fit_predict(y, n_periods=1)
 forecasts
 
-forecasts, conf_int = arima.predict(n_periods=1, return_conf_int=True, alpha=0.05)
-forecasts, conf_int
+# Округление до 4 десятичных знаков
+rounded_forecast = round(forecast, 4)
 
-arima.fit(y)
-arima.summary()
+print(f"Прогноз на 1 шаг вперед: {rounded_forecast}")
 
-arima.plot_diagnostics()
-plt.show()
+# Дополнительно: вывод сводки модели
+print("\nСводка модели:")
+print(model.summary())
 
 ```
 
