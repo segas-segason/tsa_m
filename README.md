@@ -567,7 +567,7 @@ warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
 z = web.DataReader(name='AAA', data_source='fred', start='2000-01-01', end='2024-12-31')
-y = np.log(z)
+y = z
 
 # Выбираем какие компоненты включить в модель
 mod = UnobservedComponents(y, level=True, trend=True, seasonal=6, cycle=False, stochastic_level=True, stochastic_trend=True, stochastic_seasonal=True, stochastic_cycle=False)
