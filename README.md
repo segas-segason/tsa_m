@@ -475,7 +475,7 @@ warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
 z = web.DataReader(name='TB3MS', data_source='fred', start='2000-01-01', end='2024-12-31')
-y = np.log(z)
+y = z
 
 stl = STL(y, seasonal=7)
 res = stl.fit()
