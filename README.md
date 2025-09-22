@@ -364,42 +364,36 @@ print(arima.summary())
 ```python
 import numpy as np
 import pandas as pd
-
 from statsmodels.tsa.api import ARIMA
-from statsmodels.stats.api import het_arch, acorr_ljungbox
-from statsmodels.graphics.tsaplots import plot_predict
-
+from statsmodels.stats.diagnostic import acorr_ljungbox
 import pandas_datareader.data as web
-
-# настройки визуализации
 import matplotlib.pyplot as plt
-
-# Не показывать Warnings
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
-# Не показывать ValueWarning, ConvergenceWarning из statsmodels
 from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
 warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
 # Загрузка данных
 y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
+y = y['WAAA'].dropna()  # Важно: берем конкретный столбец и удаляем NaN
 
 # спецификация модели
-mod = ARIMA(y, order=(2,1,1), trend='c', missing='drop')
+mod = ARIMA(y, order=(2,1,1), trend='c')  # Убрал missing='drop', так как уже dropna()
 # подгонка модели на данных
 res = mod.fit()
 # выводим результаты подгонки
-res.summary(alpha=0.05)
+print(res.summary(alpha=0.05))
 
+# Диагностические графики
 res.plot_diagnostics(lags=8)
-
 plt.show()
 
 # корректировка степеней свободы: число оцениваемых коэффициентов = число параметров - 1 (-sigma2)
-model_df = mod.k_params-1
-# для тест отбрасываем первые d остатков (d=mod.k_diff) с указанием лагов 8 Проведение теста Льюнга-Бокса на серийную корреляцию с 8 лагами
-acorr_ljungbox(res.resid[mod.k_diff:] , lags=[8], model_df=model_df)
+model_df = mod.k_params - 1
+# для теста отбрасываем первые d остатков (d=mod.k_diff) с указанием лагов 8
+# Проведение теста Льюнга-Бокса на серийную корреляцию с 8 лагами
+lb_test = acorr_ljungbox(res.resid[mod.k_diff:], lags=[8], model_df=model_df, return_df=True)
 
 # Получение тестовой статистики для лага 8
 test_statistic = lb_test.loc[8, 'lb_stat']
@@ -421,7 +415,7 @@ else:
 
 # Дополнительно: вывод сводки модели
 print("\nСводка модели ARIMA(2,1,1) со сносом:")
-print(result.summary())
+print(res.summary())  # Исправлено: res.summary() вместо result.summary()
 ```
 
 
