@@ -295,7 +295,7 @@ print(arima.summary())
 <img width="1325" height="338" alt="image" src="https://github.com/user-attachments/assets/0d75639f-b37d-4220-8d3b-824ec13332fc" />
 
 ### Решение
-Файл time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
+Файл time-series-analysis/jupyter-notebooks/arima-statsmodels.ipynb
 
 ```python
 import numpy as np
@@ -318,12 +318,15 @@ from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
 warnings.simplefilter('ignore', category=ValueWarning)
 warnings.simplefilter('ignore', category=ConvergenceWarning)
 
+# Загрузка данных
 y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
 
-arima = pm.ARIMA(order=(2,1,1), trend='c')
-# подгонка модели и прогноз
-forecasts = arima.fit_predict(y, n_periods=10)
-forecasts
+# спецификация модели
+mod = ARIMA(y, order=(2,1,1), trend='c', missing='drop')
+# подгонка модели на данных
+res = mod.fit()
+# выводим результаты подгонки
+res.summary(alpha=0.05)
 
 res.plot_diagnostics(lags=8)
 
@@ -331,8 +334,30 @@ plt.show()
 
 # корректировка степеней свободы: число оцениваемых коэффициентов = число параметров - 1 (-sigma2)
 model_df = mod.k_params-1
-# для тест отбрасываем первые d остатков (d=mod.k_diff)
+# для тест отбрасываем первые d остатков (d=mod.k_diff) с указанием лагов 8 Проведение теста Льюнга-Бокса на серийную корреляцию с 8 лагами
 acorr_ljungbox(res.resid[mod.k_diff:] , lags=[8], model_df=model_df)
+
+# Получение тестовой статистики для лага 8
+test_statistic = lb_test.loc[8, 'lb_stat']
+p_value = lb_test.loc[8, 'lb_pvalue']
+
+# Округление тестовой статистики до 3 десятичных знаков
+test_statistic_rounded = round(test_statistic, 3)
+
+print(f"Тестовая статистика Льюнга-Бокса (8 лагов): {test_statistic_rounded}")
+print(f"P-значение: {p_value:.6f}")
+
+# Вывод о наличии серийной корреляции на уровне значимости 1%
+if p_value < 0.01:
+    print("Вывод: На уровне значимости 1% отвергаем нулевую гипотезу об отсутствии серийной корреляции.")
+    print("В остатках модели присутствует статистически значимая серийная корреляция.")
+else:
+    print("Вывод: На уровне значимости 1% нет оснований отвергать нулевую гипотезу.")
+    print("В остатках модели отсутствует статистически значимая серийная корреляция.")
+
+# Дополнительно: вывод сводки модели
+print("\nСводка модели ARIMA(2,1,1) со сносом:")
+print(result.summary())
 ```
 
 
