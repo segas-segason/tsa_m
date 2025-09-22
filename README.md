@@ -509,34 +509,30 @@ print(f"Значение локального тренда в финальной
 ```python
 import numpy as np
 import pandas as pd
-
 import pmdarima as pm
-
 import pandas_datareader.data as web
-
-# настройки визуализации
-import matplotlib.pyplot as plt
-
-# Не показывать Warnings
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
+# Загрузка данных
 y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
+y = y['WAAA'].dropna()  # оставляем только ряд
 
-#trend n без сноса
+# Модель ARIMA(2,1,1) без сноса
 arima = pm.ARIMA(order=(2,1,1), trend='n')
-forecasts = arima.fit_predict(y, n_periods=1)
-forecasts
+arima.fit(y)
 
-# Округление до 4 десятичных знаков
-rounded_forecast = round(forecast, 4)
+# Прогноз на 1 шаг вперёд
+forecasts = arima.predict(n_periods=1)
 
-print(f"Прогноз на 1 шаг вперед: {rounded_forecast}")
+# Округление до 4-х знаков
+rounded_forecast = round(forecasts[0], 4)
 
-# Дополнительно: вывод сводки модели
+print(f"Прогноз на 1 шаг вперёд: {rounded_forecast}")
+
+# Сводка модели
 print("\nСводка модели:")
 print(arima.summary())
-
 ```
 
 
