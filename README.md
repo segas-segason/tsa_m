@@ -303,7 +303,7 @@ print(conf_int)
 
 # Вывод сводки модели
 print("\nСводка модели:")
-print(model.summary())
+print(arima.summary())
 ```
 
 
