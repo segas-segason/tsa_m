@@ -446,6 +446,7 @@ print(f"Значение локального тренда в финальной
 <img width="991" height="194" alt="image" src="https://github.com/user-attachments/assets/1ad5fafd-af35-4873-833e-c4e252e6be17" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/arima-pmdarima.ipynb
 
 ```python
 import numpy as np
@@ -464,6 +465,7 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='2024-01-31')
 
+#trend n без сноса
 arima = pm.ARIMA(order=(2,1,1), trend='n')
 forecasts = arima.fit_predict(y, n_periods=1)
 forecasts
@@ -475,7 +477,7 @@ print(f"Прогноз на 1 шаг вперед: {rounded_forecast}")
 
 # Дополнительно: вывод сводки модели
 print("\nСводка модели:")
-print(model.summary())
+print(arima.summary())
 
 ```
 
@@ -489,15 +491,13 @@ print(model.summary())
 <img width="989" height="213" alt="image" src="https://github.com/user-attachments/assets/6bdb86b2-bc88-4191-9a9e-9a69d2ffb148" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/statespace-statsmodels.ipynb
 
 ```python
 import numpy as np
 import pandas as pd
 
-from sktime.forecasting.structural import UnobservedComponents
-from sktime.utils.plotting import plot_series
-# временной горизонт для прогнозирования
-from sktime.forecasting.base import ForecastingHorizon
+from statsmodels.tsa.api import UnobservedComponents
 
 import pandas_datareader.data as web
 
@@ -508,25 +508,35 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 # Не показывать ValueWarning, ConvergenceWarning из statsmodels
-# from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
-# warnings.simplefilter('ignore', category=ValueWarning)
-# warnings.simplefilter('ignore', category=ConvergenceWarning)
+from statsmodels.tools.sm_exceptions import ValueWarning, ConvergenceWarning
+warnings.simplefilter('ignore', category=ValueWarning)
+warnings.simplefilter('ignore', category=ConvergenceWarning)
 
-gdp = web.DataReader(name='AAA', data_source='fred', start='2000-01-01' end='2024-12-31')
-y = np.log(gdp)
-y.index = y.index.to_period(freq='Q')
+z = web.DataReader(name='AAA', data_source='fred', start='2000-01-01', end='2024-12-31')
+y = np.log(z)
 
 # Выбираем какие компоненты включить в модель
-forecaster = UnobservedComponents(level=True, trend=True, seasonal=6, cycle=False, stochastic_level=True, stochastic_trend=True, stochastic_seasonal=True, stochastic_cycle=False)
-# зададим горизонт прогнозирования и частотность
-fh = ForecastingHorizon(np.arange(1,11), freq ='Q')
+mod = UnobservedComponents(y, level=True, trend=True, seasonal=6, cycle=False, stochastic_level=True, stochastic_trend=True, stochastic_seasonal=True, stochastic_cycle=False)
+res = mod.fit()
+# res.summary()
 
-y_pred = forecaster.fit_predict(y=y, fh=fh)
-y_pred
+# Прогноз на один период вперед
+forecast = res.forecast(steps=1)
+forecast_value = forecast.iloc[0]  # Получаем значение прогноза
 
-plot_series(y.tail(50), y_pred, labels=['y', 'y_pred'])
+# Округление до 2 десятичных знаков
+rounded_forecast = round(forecast_value, 2)
 
+print(f"Прогноз на один период вперед: {rounded_forecast}")
+
+# Визуализация прогноза
+plt.plot(res.forecast(steps=1))
+plt.plot(y)
 plt.show()
+
+# Дополнительно: вывод сводки модели
+print("\nСводка модели:")
+print(res.summary())
 ```
 
 
