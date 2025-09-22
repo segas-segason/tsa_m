@@ -335,7 +335,7 @@ arima.fit(y)
 arima.summary()
 
 # Получение коэффициентов и их округление до 3 десятичных знаков
-coefficients = result.params
+coefficients = arima.params
 rounded_coefficients = coefficients.round(3)
 
 arima.plot_diagnostics()
