@@ -653,9 +653,9 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
-y = np.log( web.DataReader(name='GDP', data_source='fred', start='2010-01-01', end='2024-01-31'))
+y = np.log( web.DataReader(name='MORTGAGE30US', data_source='fred', start='2010-01-01', end='2024-01-31'))
 
-ax = y.plot(title='US GDP')
+ax = y.plot(title='MORTGAGE30US')
 
 # надпись по ос oX
 ax.set_xlabel('Date')
@@ -671,6 +671,23 @@ plt.show()
 kpss_stat, p_value, lags, crit = kpss(y, regression='ct')
 # тестовая статистика, её p-значение и критические значения
 kpss_stat, p_value, crit
+
+# Округление до 3 десятичных знаков
+kpss_stat_rounded = round(kpss_stat, 3)
+critical_value_5percent = round(crit['5%'], 3)
+
+print("Результаты KPSS-теста для первой разности ряда:")
+print(f"Тестовая статистика: {kpss_stat_rounded}")
+print(f"P-значение: {p_value:.6f}")
+print(f"Критическое значение (5%): {critical_value_5percent}")
+
+# Вывод на уровне значимости 5%
+if p_value < 0.05:
+    print("\nВывод: На уровне значимости 5% отвергаем нулевую гипотезу о стационарности.")
+    print("Первая разность ряда не является стационарной.")
+else:
+    print("\nВывод: На уровне значимости 5% нет оснований отвергать нулевую гипотезу.")
+    print("Первая разность ряда является стационарной.")
 ```
 
 
