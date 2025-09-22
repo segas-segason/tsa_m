@@ -334,6 +334,7 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
 
+# указывается арима order=(1,1,1) без сноса trend n
 arima = pm.ARIMA(order=(1,1,1), trend='n')
 arima.fit(y)
 arima.summary()
