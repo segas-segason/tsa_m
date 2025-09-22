@@ -379,7 +379,7 @@ y = web.DataReader(name='WAAA', data_source='fred', start='2005-01-01', end='202
 y = y['WAAA'].dropna()  # Важно: берем конкретный столбец и удаляем NaN
 
 # спецификация модели
-mod = ARIMA(y, order=(2,1,1), trend='ct')
+mod = ARIMA(y, order=(2,1,1), trend='t')
 # подгонка модели на данных
 res = mod.fit()
 # выводим результаты подгонки
