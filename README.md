@@ -725,7 +725,7 @@ y = rate.diff().dropna()
 y.plot()
 plt.show()
 
-am = arch_model(y, mean='ARX', lags=2, vol='GARCH', p=1, q=1, power=2)
+am = arch_model(y, mean='AR', lags=2, vol='GARCH', p=1, q=1, power=2)
 
 res = am.fit()
 
@@ -741,6 +741,17 @@ res.hedgehog_plot(plot_type='mean')
 plt.show()
 
 res.arch_lm_test(lags=5)
+
+# Получение и округление коэффициентов до 3 десятичных знаков
+coefficients = res.params
+rounded_coefficients = coefficients.round(3)
+
+print("Коэффициенты модели AR(2)-GARCH(1,1) с λ = 2 (округленные до 3 знаков):")
+print(rounded_coefficients)
+
+# Вывод полной сводки
+print("\nПолная сводка модели:")
+print(res.summary())
 ```
 
 
@@ -770,5 +781,20 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
+y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31 ')
 
+
+arima_opt = pm.auto_arima(y, information_criterion='aic', test='kpss', seasonal=False)
+arima_opt.get_params()
+
+# Получение оптимального порядка модели
+optimal_order = arima_opt.order
+print(f"Оптимальный порядок модели ARIMA: {optimal_order}")
+
+# Вывод сводки модели
+print("\nСводка оптимальной модели:")
+print(arima_opt.summary())
+
+# Дополнительная информация
+print(f"Значение AIC: {arima_opt.aic():.2f}")
 ```
