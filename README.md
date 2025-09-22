@@ -440,7 +440,7 @@ print(result.summary())
 ### Решение
 
 ```python
-
+Ответ p=1 d=1 q=2
 ```
 
 
@@ -452,7 +452,7 @@ print(result.summary())
 ### Решение
 
 ```python
-
+Ответ p=2 d=0 q=3
 ```
 
 
@@ -619,7 +619,7 @@ print(res.summary())
 ### Решение
 
 ```python
-
+Ответ p=1 q=1 λ=2
 ```
 
 
@@ -631,7 +631,7 @@ print(res.summary())
 ### Решение
 
 ```python
-
+Ответ p=2 q=2 λ=1
 ```
 
 
