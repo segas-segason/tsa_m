@@ -632,39 +632,23 @@ print(res.summary())
 ```python
 import numpy as np
 import pandas as pd
-
-from statsmodels.tsa.api import adfuller, kpss, range_unit_root_test
-
+from statsmodels.tsa.stattools import adfuller
 import pandas_datareader.data as web
-
-# настройки визуализации
-import matplotlib.pyplot as plt
-
-# Не показывать Warnings
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
-y = np.log( web.DataReader(name='MORTGAGE30US', data_source='fred', start='2010-01-01', end='2024-01-31'))
+# Загрузка данных
+y = web.DataReader(name='MORTGAGE30US', data_source='fred',
+                   start='2010-01-01', end='2024-01-31')
+y = y['MORTGAGE30US'].dropna()
 
-ax = y.plot(title='MORTGAGE30US')
+# Первая разность
+dy = y.diff().dropna()
 
-# надпись по ос oX
-ax.set_xlabel('Date')
-# надпись по ос oY
-ax.set_ylabel('log(GDP)')
-# отобразить сетку
-ax.grid()
-# удалим легенду
-ax.legend().remove()
+# ADF-тест (с константой и трендом)
+adf_stat, pval, usedlag, nobs, critical_values, icbest = adfuller(dy, regression='ct')
 
-plt.show()
-
-#regression='ct' константа и тренд
-adf_stat, pval, usedlag, nobs, critical_values, BIC = adfuller(y, regression='ct')
-# тестовая статистика, её p-значение и критические значения
-adf_stat, pval, critical_values
-
-# Округление до 3 десятичных знаков
+# Округление
 adf_stat_rounded = round(adf_stat, 3)
 critical_value_5percent = round(critical_values['5%'], 3)
 
@@ -673,7 +657,6 @@ print(f"Тестовая статистика: {adf_stat_rounded}")
 print(f"P-значение: {pval:.6f}")
 print(f"Критическое значение (5%): {critical_value_5percent}")
 
-# Вывод на уровне значимости 5%
 if pval < 0.05:
     print("\nВывод: На уровне значимости 5% отвергаем нулевую гипотезу о наличии единичного корня.")
     print("Первая разность ряда является стационарной.")
