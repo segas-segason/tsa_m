@@ -306,7 +306,7 @@ print(model.summary())
 ## Задание 7
 
 Из БД FRED сĸачайте недельные данные по '30-year Fixed Rate Mortgage Average in the United States' (ряд с именем MORTGAGE30US) с 2005-01-01 по 2024-01-31 и создайте ряд у.
-Подгоните модель ARIMA(1, 1, 1) БЕЗ СНОСА и уĸажите ĸоэффициенты. Ответ оĸруглите до 3-х десятичных знаĸов.
+Подгоните модель ARIMA(0, 1, 2) БЕЗ СНОСА и уĸажите ĸоэффициенты. Ответ оĸруглите до 3-х десятичных знаĸов.
 
 <img width="1334" height="482" alt="image" src="https://github.com/user-attachments/assets/d1fca602-baa1-4b89-bfc3-ec8d568a184e" />
 
@@ -329,8 +329,8 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
 
-# указывается арима order=(1,1,1) без сноса trend n
-arima = pm.ARIMA(order=(1,1,1), trend='n')
+# указывается арима order=(0,1,2) без сноса trend n
+arima = pm.ARIMA(order=(0,1,2), trend='n')
 arima.fit(y)
 arima.summary()
 
