@@ -592,7 +592,7 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = np.log( web.DataReader(name='MORTGAGE30US', data_source='fred', start='2010-01-01', end='2024-01-31'))
 
-ax = y.plot(title='US GDP')
+ax = y.plot(title='MORTGAGE30US')
 
 # надпись по ос oX
 ax.set_xlabel('Date')
@@ -605,9 +605,12 @@ ax.legend().remove()
 
 plt.show()
 
-adf_stat, pval, usedlag, nobs, critical_values, BIC = adfuller(y, regression='ct', autolag='BIC')
+#regression='ct' константа и тренд
+adf_stat, pval, usedlag, nobs, critical_values, BIC = adfuller(y, regression='ct')
 # тестовая статистика, её p-значение и критические значения
 adf_stat, pval, critical_values
+
+
 ```
 
 ## Задание 17
