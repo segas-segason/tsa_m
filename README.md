@@ -187,9 +187,6 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE15US', data_source='fred', start='2010-01-01', end='2024-01-31')
 
-# Вычисление первой разности ставки
-y = rate.diff().dropna()
-
 # Вычисление частных коэффициентов автокорреляции
 pacf_values = pacf(y, nlags=4)
 
