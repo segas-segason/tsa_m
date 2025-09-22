@@ -822,12 +822,17 @@ arima_opt.get_params()
 
 # Получение оптимального порядка модели
 optimal_order = arima_opt.order
-print(f"Оптимальный порядок модели ARIMA: {optimal_order}")
+p, d, q = optimal_order  # распаковываем
 
-# Вывод сводки модели
+print(f"\nОптимальный порядок модели ARIMA:")
+print(f"p = {p}")
+print(f"d = {d}")
+print(f"q = {q}")
+
+# Сводка модели
 print("\nСводка оптимальной модели:")
 print(arima_opt.summary())
 
-# Дополнительная информация
-print(f"Значение AIC: {arima_opt.aic():.2f}")
+# AIC
+print(f"\nЗначение AIC: {arima_opt.aic():.2f}")
 ```
