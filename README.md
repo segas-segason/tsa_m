@@ -817,8 +817,7 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31 ')
 
-
-arima_opt = pm.auto_arima(y, information_criterion='aic', test='kpss', seasonal=False, trace=True)
+arima_opt = pm.auto_arima(y, information_criterion='aic', test='kpss', seasonal=False, trace=True, stepwise=True)
 arima_opt.get_params()
 
 # Получение оптимального порядка модели
