@@ -286,7 +286,7 @@ y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', 
 
 # указывается арима order=(1,1,1) со сносом
 arima = pm.ARIMA(order=(1,1,1), trend='c')
-model.fit(y)
+arima.fit(y)
 
 # подгонка модели и прогноз на 10 периодов
 forecasts = arima.fit_predict(y, n_periods=10)
