@@ -167,9 +167,44 @@ print(f"Прогноз, умноженный на 1000: {result}")
 <img width="1316" height="277" alt="image" src="https://github.com/user-attachments/assets/39bc4041-d59a-48a6-badd-060bbff951c3" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/sample-acf-pacf-statsmodels.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+from statsmodels.tsa.api import acf, pacf
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+y = web.DataReader(name='MORTGAGE15US', data_source='fred', start='2010-01-01', end='2024-01-31')
+
+# Вычисление первой разности ставки
+y = rate.diff().dropna()
+
+# Вычисление частных коэффициентов автокорреляции
+pacf_values = pacf(y, nlags=4)
+
+# Извлечение значения для лага 4 (r_part(4))
+r_part_4 = pacf_values[4]
+
+# Округление до 3 десятичных знаков
+result = round(r_part_4, 3)
+
+print(f"Частный коэффициент автокорреляции r_part(4): {result}")
+
+# Дополнительно: вывод всех PACF значений для лагов 0-4
+print("\nВсе частные коэффициенты автокорреляции (лаги 0-4):")
+for i, value in enumerate(pacf_values):
+    print(f"Lag {i}: {value:.3f}")
 ```
 
 
@@ -182,9 +217,45 @@ print(f"Прогноз, умноженный на 1000: {result}")
 <img width="1318" height="273" alt="image" src="https://github.com/user-attachments/assets/8968fd65-2bed-491d-a279-6c3f6d905345" />
 
 ### Решение
+Файл time-series-analysis/jupyter-notebooks/sample-acf-pacf-statsmodels.ipynb
 
 ```python
+import numpy as np
+import pandas as pd
 
+from statsmodels.tsa.api import acf, pacf
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+import pandas_datareader.data as web
+
+# настройки визуализации
+import matplotlib.pyplot as plt
+
+# Не показывать Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
+
+# Загрузка данных
+rate = web.DataReader(name='MORTGAGE15US', data_source='fred', start='2010-01-01', end='2024-01-31')
+
+# Вычисление первой разности ставки
+y = rate.diff().dropna()
+
+# Вычисление коэффициентов автокорреляции
+acf_values = acf(y, nlags=2)
+
+# Извлечение значения для лага 2 (r(2))
+r_2 = acf_values[2]
+
+# Округление до 3 десятичных знаков
+result = round(r_2, 3)
+
+print(f"Коэффициент автокорреляции r(2): {result}")
+
+# Дополнительно: вывод всех ACF значений для лагов 0-2
+print("\nВсе коэффициенты автокорреляции (лаги 0-2):")
+for i, value in enumerate(acf_values):
+    print(f"Lag {i}: {value:.3f}")
 ```
 
 
