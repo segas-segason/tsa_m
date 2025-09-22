@@ -284,26 +284,21 @@ warnings.simplefilter(action='ignore', category=Warning)
 
 y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', end='2024-01-31')
 
-# указывается арима order=(1,1,1) со сносом
-arima = pm.ARIMA(order=(1,1,1), trend='c')
-arima.fit(y)
+# Подгонка модели ARIMA(1,1,1) со сносом
+model = pm.ARIMA(order=(1,1,1), trend='c')
+model.fit(y)
 
-# подгонка модели и прогноз на 10 периодов
-forecasts = arima.fit_predict(y, n_periods=10)
+# Получение коэффициентов и их округление до 3 десятичных знаков
+coefficients = model.params()
+rounded_coefficients = {key: round(value, 3) for key, value in coefficients.items()}
 
-# Прогноз с доверительными интервалами
-forecasts, conf_int = arima.predict(n_periods=10, return_conf_int=True, alpha=0.05)
-
-#Вывод инфо
-print("Прогноз на 10 периодов:")
-print(forecasts)
-
-print("\nДоверительные интервалы:")
-print(conf_int)
+print("Коэффициенты модели ARIMA(1,1,1) со сносом:")
+for param, value in rounded_coefficients.items():
+    print(f"{param}: {value}")
 
 # Вывод сводки модели
 print("\nСводка модели:")
-print(arima.summary())
+print(model.summary())
 ```
 
 
