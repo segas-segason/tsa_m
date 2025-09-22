@@ -218,12 +218,24 @@ y = web.DataReader(name='MORTGAGE30US', data_source='fred', start='2005-01-01', 
 
 # указывается арима order=(1,1,1) со сносом
 arima = pm.ARIMA(order=(1,1,1), trend='c')
-# подгонка модели и прогноз
-forecasts = arima.fit_predict(y, n_periods=10)
-forecasts
+model.fit(y)
 
+# подгонка модели и прогноз на 10 периодов
+forecasts = arima.fit_predict(y, n_periods=10)
+
+# Прогноз с доверительными интервалами
 forecasts, conf_int = arima.predict(n_periods=10, return_conf_int=True, alpha=0.05)
-forecasts, conf_int
+
+#Вывод инфо
+print("Прогноз на 10 периодов:")
+print(forecasts)
+
+print("\nДоверительные интервалы:")
+print(conf_int)
+
+# Вывод сводки модели
+print("\nСводка модели:")
+print(model.summary())
 ```
 
 
@@ -258,8 +270,19 @@ arima = pm.ARIMA(order=(1,1,1), trend='n')
 arima.fit(y)
 arima.summary()
 
+# Получение коэффициентов и их округление до 3 десятичных знаков
+coefficients = result.params
+rounded_coefficients = coefficients.round(3)
+
 arima.plot_diagnostics()
 plt.show()
+
+print("Коэффициенты модели ARIMA(1,1,1) БЕЗ сноса:")
+print(rounded_coefficients)
+
+# Вывод полной сводки модели
+print("\nПолная сводка модели:")
+print(arima.summary())
 ```
 
 
