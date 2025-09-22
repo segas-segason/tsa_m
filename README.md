@@ -610,7 +610,22 @@ adf_stat, pval, usedlag, nobs, critical_values, BIC = adfuller(y, regression='ct
 # тестовая статистика, её p-значение и критические значения
 adf_stat, pval, critical_values
 
+# Округление до 3 десятичных знаков
+adf_stat_rounded = round(adf_stat, 3)
+critical_value_5percent = round(critical_values['5%'], 3)
 
+print("Результаты ADF-теста для ПЕРВОЙ РАЗНОСТИ ряда:")
+print(f"Тестовая статистика: {adf_stat_rounded}")
+print(f"P-значение: {pval:.6f}")
+print(f"Критическое значение (5%): {critical_value_5percent}")
+
+# Вывод на уровне значимости 5%
+if pval < 0.05:
+    print("\nВывод: На уровне значимости 5% отвергаем нулевую гипотезу о наличии единичного корня.")
+    print("Первая разность ряда является стационарной.")
+else:
+    print("\nВывод: На уровне значимости 5% нет оснований отвергать нулевую гипотезу.")
+    print("Первая разность ряда не является стационарной.")
 ```
 
 ## Задание 17
