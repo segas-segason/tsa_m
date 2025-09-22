@@ -148,7 +148,7 @@ res = am.fit()
 y_forecasts = res.forecast(horizon=1)
 
 # Получение прогноза для среднего значения (первый период)
-mean_forecast = forecast.mean.iloc[-1, 0]  # Последняя строка, первый столбец
+mean_forecast = y_forecast.mean.iloc[-1, 0]  # Последняя строка, первый столбец
 
 # Умножение на 1000 и округление до 2-х десятичных знаков
 result = round(mean_forecast * 1000, 2)
